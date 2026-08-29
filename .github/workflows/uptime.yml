@@ -1,0 +1,44 @@
+name: Uptime check
+
+on:
+  schedule:
+    # Every 10 minutes — GitHub's actual minimum granularity, and busy
+    # periods can delay a run further; treat this as "roughly every 10-15
+    # minutes," not a guaranteed exact interval.
+    - cron: "*/10 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check /api/health, alert Slack on failure
+        run: |
+          set +e
+          # A single blip (cold start, transient network hiccup) shouldn't
+          # page anyone — only alert once health has failed 3 times in a
+          # row across a short window.
+          ok=0
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://retruv.vercel.app/api/health)
+            if [ "$code" = "200" ]; then
+              ok=1
+              break
+            fi
+            sleep 15
+          done
+
+          if [ "$ok" = "1" ]; then
+            echo "Healthy (HTTP $code)"
+            exit 0
+          fi
+
+          echo "UNHEALTHY after 3 attempts (last HTTP status: $code)"
+          if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+            curl -s -X POST -H "Content-Type: application/json; charset=utf-8" \
+              --data "{\"text\":\"🔴 RETRUV — https://retruv.vercel.app/api/health n'a pas répondu (HTTP $code) après 3 tentatives sur 45s. Vérifier https://vercel.com/acme-a723/retruv\"}" \
+              "$SLACK_WEBHOOK_URL"
+          fi
+          exit 1
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
