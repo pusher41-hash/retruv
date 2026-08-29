@@ -25,12 +25,7 @@ import {
   RATING_TRUST_WEIGHT,
   SENSITIVE_DOC_SLUGS as SENSITIVE,
 } from "./constants";
-import {
-  ensureUploadDirs,
-  privateUploadPath,
-  publicUploadPath,
-  publicUploadUrl,
-} from "./storage";
+import { putPublicUpload, readPrivateUpload } from "./storage";
 
 export { SENSITIVE };
 
@@ -363,27 +358,26 @@ export async function processSensitivePhotos(
 ): Promise<{ publicUrls: string[]; blurredUrls: string[] }> {
   if (photos.length === 0) return { publicUrls: [], blurredUrls: [] };
 
-  await ensureUploadDirs();
   const publicUrls: string[] = [];
   const blurredUrls: string[] = [];
 
   for (const photo of photos) {
     const outFilename = `${randomUUID()}.jpg`;
-    const inputPath = privateUploadPath(photo.privateFilename);
+    const original = await readPrivateUpload(photo.privateFilename);
 
     if (blurPhotos) {
       // Strong pixel-level Gaussian blur + downscale: real redaction, not a
       // client-removable query parameter. The unblurred original stays only
-      // in the private directory.
-      await sharp(inputPath)
+      // in the private store.
+      const blurred = await sharp(original)
         .resize({ width: 900, withoutEnlargement: true })
         .blur(28)
         .jpeg({ quality: 60 })
-        .toFile(publicUploadPath(outFilename));
-      blurredUrls.push(publicUploadUrl(outFilename));
+        .toBuffer();
+      blurredUrls.push(await putPublicUpload(outFilename, blurred));
     } else {
-      await sharp(inputPath).jpeg({ quality: 85 }).toFile(publicUploadPath(outFilename));
-      const url = publicUploadUrl(outFilename);
+      const processed = await sharp(original).jpeg({ quality: 85 }).toBuffer();
+      const url = await putPublicUpload(outFilename, processed);
       publicUrls.push(url);
       blurredUrls.push(url);
     }

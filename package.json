@@ -13,6 +13,7 @@
     "db:push:test": "drizzle-kit push --config drizzle.test.config.json"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

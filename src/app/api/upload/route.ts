@@ -1,12 +1,11 @@
 import { randomUUID } from "crypto";
-import { promises as fs } from "fs";
 import sharp from "sharp";
 import { db } from "@/db";
 import { uploads } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
 import { checkUploadRate, logAudit } from "@/lib/security";
-import { ensureUploadDirs, privateUploadPath } from "@/lib/storage";
+import { putPrivateUpload } from "@/lib/storage";
 
 const MAX_SIZE_BYTES = 8 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -51,10 +50,9 @@ export async function POST(req: Request) {
       return jsonError("Image invalide ou corrompue");
     }
 
-    await ensureUploadDirs();
     const id = randomUUID();
     const filename = `${id}.jpg`;
-    await fs.writeFile(privateUploadPath(filename), normalized);
+    await putPrivateUpload(filename, normalized);
 
     const [row] = await db
       .insert(uploads)

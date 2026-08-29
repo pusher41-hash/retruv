@@ -27,3 +27,5 @@ coverage
 # runtime-generated audit trail (real user IDs/actions from any environment
 # this app has run in — see src/lib/audit-trail.ts) — data, not source.
 audit-trail/
+
+.env*
