@@ -68,6 +68,12 @@ jobs:
           # only in Vercel's env vars, never in this repo or its CI.
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/retruv_test
           RETRUV_ENC_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+          # Surfaces the spawned `next dev` server's own stdout/stderr in the
+          # CI log — otherwise a route handler's 500 shows only as an HTTP
+          # status in the test assertion, with the actual stack trace
+          # silently discarded (global-setup.ts sets stdio: "ignore" unless
+          # this is set). Temporary diagnostic aid, safe to leave on.
+          DEBUG_TEST_SERVER: "1"
           # Dedicated retruv-test-private / retruv-test-public Vercel Blob
           # stores — never the production stores. storage.ts/audit-trail.ts
           # always pass storeId explicitly, so nothing the suite does here
