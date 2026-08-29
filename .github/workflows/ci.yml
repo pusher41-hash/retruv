@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit tests, build
+    runs-on: ubuntu-latest
+    env:
+      # Never a real target, and nothing in this job ever actually connects
+      # to it — `src/db/index.ts` only needs a syntactically valid
+      # DATABASE_URL to construct its (lazily-connecting) pg.Pool at module
+      # load time, which every unit test and the build both trigger simply
+      # by importing modules that import `@/db`. RETRUV_ENC_KEY must decode
+      # to exactly 32 bytes (AES-256) — this one does, it's not otherwise
+      # meaningful. Real secrets live only in Vercel's env vars.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/retruv_ci
+      RETRUV_ENC_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npx eslint .
+      - run: npm test
+      - run: npm run build
+
+  integration:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: retruv_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # `db:push:test` runs drizzle-kit interactively when it detects an
+      # ambiguous change (rare against a brand-new empty DB, but not
+      # impossible) — `yes` auto-confirms so this never hangs the runner.
+      - run: yes | npx drizzle-kit push --config drizzle.test.config.json
+      - run: npm run test:integration
+        env:
+          # CI-only throwaway values — this Postgres service and its data
+          # are destroyed at the end of the run, never anything real. Real
+          # secrets (prod DATABASE_URL, RETRUV_ENC_KEY, webhook URLs) live
+          # only in Vercel's env vars, never in this repo or its CI.
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/retruv_test
+          RETRUV_ENC_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
