@@ -20,15 +20,6 @@ import { get, put } from "@vercel/blob";
 const PRIVATE_STORE_ID = process.env.BLOB_PRIVATE_STORE_ID;
 const PUBLIC_STORE_ID = process.env.BLOB_PUBLIC_STORE_ID;
 
-if (process.env.DEBUG_TEST_SERVER) {
-  console.log(
-    "[storage.ts diag] PUBLIC_STORE_ID:",
-    PUBLIC_STORE_ID ? `len=${PUBLIC_STORE_ID.length} matches=${PUBLIC_STORE_ID === "store_auMuHPRCzI0loqW6"}` : "undefined",
-    "| PRIVATE_STORE_ID:",
-    PRIVATE_STORE_ID ? `len=${PRIVATE_STORE_ID.length} matches=${PRIVATE_STORE_ID === "store_mi6zospZHXmp55iE"}` : "undefined"
-  );
-}
-
 // Filenames are always server-generated UUIDs (see /api/upload and
 // processSensitivePhotos), never derived from user input, so there is no
 // path-traversal surface here.

@@ -53,31 +53,13 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          # Temporarily bumped from 22 to 24 to test whether the CI-only
-          # "Cannot use public access on a private store" Blob error
-          # (env vars confirmed identical to local via prior diagnostics)
-          # is a Node-version-specific difference — local dev runs on 24.
-          node-version: 24
+          node-version: 22
           cache: npm
       - run: npm ci
       # `db:push:test` runs drizzle-kit interactively when it detects an
       # ambiguous change (rare against a brand-new empty DB, but not
       # impossible) — `yes` auto-confirms so this never hangs the runner.
       - run: yes | npx drizzle-kit push --config drizzle.test.config.json
-      - name: Diagnose Blob env vars (temporary)
-        run: |
-          node -e "
-          const pub = process.env.BLOB_PUBLIC_STORE_ID || '';
-          const priv = process.env.BLOB_PRIVATE_STORE_ID || '';
-          const tok = process.env.BLOB_READ_WRITE_TOKEN || '';
-          console.log('PUBLIC_STORE_ID length:', pub.length, 'matches expected:', pub === 'store_auMuHPRCzI0loqW6');
-          console.log('PRIVATE_STORE_ID length:', priv.length, 'matches expected:', priv === 'store_mi6zospZHXmp55iE');
-          console.log('TOKEN length:', tok.length, 'starts with vercel_blob_rw_:', tok.startsWith('vercel_blob_rw_'));
-          "
-        env:
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
-          BLOB_PRIVATE_STORE_ID: ${{ secrets.BLOB_PRIVATE_STORE_ID }}
-          BLOB_PUBLIC_STORE_ID: ${{ secrets.BLOB_PUBLIC_STORE_ID }}
       - run: npm run test:integration
         env:
           # CI-only throwaway values — this Postgres service and its data
