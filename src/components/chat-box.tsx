@@ -46,6 +46,11 @@ export function ChatBox({ conversationId }: { conversationId: string }) {
 
   useEffect(() => {
     const controller = new AbortController();
+    // The state updates inside load() happen after its `await fetch`, not
+    // synchronously in this effect body — the standard fetch-on-mount +
+    // poll pattern React's own docs endorse. Flagged anyway by this rule's
+    // static analysis, which can't see past the await.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load(controller.signal);
     const t = setInterval(() => load(controller.signal), 5000);
     return () => {
