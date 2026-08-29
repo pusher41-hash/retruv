@@ -1,0 +1,64 @@
+-- RETRUV — Audit log immutability hardening
+--
+-- Run this manually, once, connected as a Postgres superuser or the
+-- database owner (e.g. `psql "$DATABASE_URL" -f sql/audit-log-immutability.sql`
+-- after editing the placeholders below). This is NOT applied by
+-- `drizzle-kit push` — it manages roles and privileges, not table schema.
+--
+-- Context: RETRUV_LANDMINES.md #9 / RETRUV_REDTEAM.md P4-2 — anyone who
+-- obtains the application's own database credentials (a leaked
+-- DATABASE_URL, a future SQL-injection-adjacent bug, a compromised admin
+-- session with raw DB access) can currently run `DELETE FROM audit_logs`
+-- and erase their tracks, because the app connects with a role that has
+-- full DML rights on every table, audit_logs included.
+--
+-- ============================================================================
+-- READ THIS FIRST: does this script even apply to you?
+-- ============================================================================
+-- If your DATABASE_URL currently connects as a Postgres SUPERUSER (the
+-- default local dev connection string in drizzle.config.json is
+-- postgresql://postgres:postgres@127.0.0.1:5432/app_db — `postgres` is a
+-- superuser on most installs), none of the REVOKEs below have any effect:
+-- superusers bypass every GRANT/REVOKE. You must first create a dedicated,
+-- non-superuser application role and point DATABASE_URL at it. Step 1
+-- below does that; skip it only if you already have such a role.
+-- ============================================================================
+
+-- 1) Dedicated, non-superuser application role.
+--    Uncomment, replace the password and database name, then run.
+--    Afterwards, update DATABASE_URL to use retruv_app instead of the
+--    superuser role, and restart the app.
+--
+-- CREATE ROLE retruv_app LOGIN PASSWORD 'change-me' NOSUPERUSER;
+-- GRANT CONNECT ON DATABASE app_db TO retruv_app;
+-- GRANT USAGE ON SCHEMA public TO retruv_app;
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO retruv_app;
+-- GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO retruv_app;
+-- ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO retruv_app;
+-- ALTER DEFAULT PRIVILEGES IN SCHEMA public
+--   GRANT USAGE, SELECT ON SEQUENCES TO retruv_app;
+
+-- 2) Once the app connects as a non-superuser role: lock down audit_logs.
+--    The application only ever INSERTs (see logAudit() in
+--    src/lib/security.ts) and SELECTs (admin dashboard) — it never
+--    legitimately updates or deletes a row. Replace retruv_app below with
+--    your actual application role name if different.
+REVOKE UPDATE, DELETE, TRUNCATE ON audit_logs FROM retruv_app;
+GRANT SELECT, INSERT ON audit_logs TO retruv_app;
+
+-- 3) Optional: a separate read-only role for admins/analysts to query
+--    audit history directly (e.g. via a BI tool), distinct from the app's
+--    write role, so a compromise of the app's own credentials can't be
+--    used to read as an "audit" identity either.
+--
+-- CREATE ROLE audit_readonly LOGIN PASSWORD 'change-me' NOSUPERUSER;
+-- GRANT CONNECT ON DATABASE app_db TO audit_readonly;
+-- GRANT USAGE ON SCHEMA public TO audit_readonly;
+-- GRANT SELECT ON audit_logs TO audit_readonly;
+
+-- Verify afterwards:
+-- SELECT grantee, privilege_type
+-- FROM information_schema.role_table_grants
+-- WHERE table_name = 'audit_logs';
+-- (retruv_app should show only SELECT and INSERT.)

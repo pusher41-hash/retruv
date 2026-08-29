@@ -1,0 +1,8 @@
+/* Force all text in hub to be dark and visible */
+[data-page="hub"] * { color: #0f172a !important; }
+[data-page="hub"] h2 { color: #0b1f3a !important; font-weight: 900 !important; }
+[data-page="hub"] h3 { color: #0b1f3a !important; font-weight: 900 !important; }
+[data-page="hub"] p { color: #334155 !important; font-weight: 600 !important; }
+[data-page="hub"] span { color: #0f172a !important; }
+[data-page="hub"] a { color: #0e4d92 !important; font-weight: 700 !important; }
+[data-page="hub"] .badge { background: #fff !important; color: #0f172a !important; border-color: #0e4d92 !important; }

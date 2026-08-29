@@ -1,0 +1,29 @@
+# dependencies
+node_modules
+
+# next.js build output
+.next
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+
+# env files — .env.local and .env.test hold real/local DB credentials and
+# encryption keys, never committed. drizzle.config.json/drizzle.test.config.json
+# stay tracked (no real secrets — the test one is a fixed local-only conn string).
+.env*
+!.env.example
+
+# logs
+npm-debug.log*
+*.log
+
+# editor/OS
+.DS_Store
+Thumbs.db
+
+# vitest / test artifacts
+coverage
+
+# runtime-generated audit trail (real user IDs/actions from any environment
+# this app has run in — see src/lib/audit-trail.ts) — data, not source.
+audit-trail/
