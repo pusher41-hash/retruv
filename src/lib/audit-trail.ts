@@ -36,11 +36,8 @@ export async function appendAuditTrail(
       contentType: "application/json",
       addRandomSuffix: false,
     });
-  } catch (err) {
+  } catch {
     // Secondary trail only — the primary record is the DB row.
-    if (process.env.DEBUG_TEST_SERVER) {
-      console.error("[audit-trail.ts diag] appendAuditTrail threw:", err);
-    }
   }
 }
 
