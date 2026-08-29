@@ -101,7 +101,12 @@ export function authedFetch(
 ): Promise<Response> {
   const headers = new Headers(init.headers);
   headers.set("Cookie", session.cookie);
-  if (init.body && !headers.has("Content-Type")) {
+  // FormData bodies (photo uploads) must NOT get an explicit Content-Type —
+  // fetch/undici sets `multipart/form-data; boundary=...` itself from the
+  // FormData instance, and overriding it here (as this used to do for every
+  // truthy body, JSON or not) drops the boundary and the server's
+  // req.formData() rejects the request outright.
+  if (init.body && !(init.body instanceof FormData) && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
   return apiFetch(path, { ...init, headers });

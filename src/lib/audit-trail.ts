@@ -17,7 +17,13 @@ import { put } from "@vercel/blob";
  * whole growing file back on every single audit event would mean an
  * ever-larger read-modify-write on every request. Many small immutable
  * objects fits the object-storage model Blob actually offers.
+ *
+ * Shares the private store with storage.ts's upload originals (same
+ * `BLOB_PRIVATE_STORE_ID` override for tests — see storage.ts), distinguished
+ * by the `audit-trail/` pathname prefix.
  */
+const PRIVATE_STORE_ID = process.env.BLOB_PRIVATE_STORE_ID;
+
 export async function appendAuditTrail(
   entry: Record<string, unknown>
 ): Promise<void> {
@@ -26,6 +32,7 @@ export async function appendAuditTrail(
     const pathname = `audit-trail/${loggedAt.toISOString()}-${randomUUID()}.json`;
     await put(pathname, JSON.stringify({ ...entry, loggedAt: loggedAt.toISOString() }), {
       access: "private",
+      storeId: PRIVATE_STORE_ID,
       contentType: "application/json",
       addRandomSuffix: false,
     });

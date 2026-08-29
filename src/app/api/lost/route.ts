@@ -190,7 +190,10 @@ export async function POST(req: Request) {
       }));
     }
 
-    const photos = await processSensitivePhotos(pendingUploads, fieldConfig.blurSensitivePhotos);
+    const photos = await processSensitivePhotos(
+      pendingUploads,
+      sensitive && fieldConfig.blurSensitivePhotos
+    );
 
     const [item] = await db
       .insert(lostItems)
@@ -217,7 +220,7 @@ export async function POST(req: Request) {
         longitude: data.longitude ?? null,
         rewardAmount: data.rewardAmount ?? null,
         privateNotes: data.privateNotes || null,
-        photoUrls: fieldConfig.blurSensitivePhotos ? [] : photos.publicUrls,
+        photoUrls: sensitive && fieldConfig.blurSensitivePhotos ? [] : photos.publicUrls,
         blurredPhotoUrls: photos.blurredUrls,
         isSensitive: sensitive,
         moderationStatus: fieldConfig.requiresModeration

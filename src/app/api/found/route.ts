@@ -216,7 +216,10 @@ export async function POST(req: Request) {
       }));
     }
 
-    const photos = await processSensitivePhotos(pendingUploads, fieldConfig.blurSensitivePhotos);
+    const photos = await processSensitivePhotos(
+      pendingUploads,
+      sensitive && fieldConfig.blurSensitivePhotos
+    );
 
     const [item] = await db
       .insert(foundItems)
@@ -243,7 +246,7 @@ export async function POST(req: Request) {
         longitude: data.longitude ?? null,
         condition: data.condition || null,
         recoveryPointId: data.recoveryPointId || null,
-        photoUrls: fieldConfig.blurSensitivePhotos ? [] : photos.publicUrls,
+        photoUrls: sensitive && fieldConfig.blurSensitivePhotos ? [] : photos.publicUrls,
         blurredPhotoUrls: photos.blurredUrls,
         privateDataEncrypted: data.privateData
           ? encryptPrivatePayload(data.privateData)

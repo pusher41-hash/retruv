@@ -68,3 +68,10 @@ jobs:
           # only in Vercel's env vars, never in this repo or its CI.
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/retruv_test
           RETRUV_ENC_KEY: MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA=
+          # Dedicated retruv-test-private / retruv-test-public Vercel Blob
+          # stores — never the production stores. storage.ts/audit-trail.ts
+          # always pass storeId explicitly, so nothing the suite does here
+          # can reach real prod data even if this token were ever reused.
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          BLOB_PRIVATE_STORE_ID: ${{ secrets.BLOB_PRIVATE_STORE_ID }}
+          BLOB_PUBLIC_STORE_ID: ${{ secrets.BLOB_PUBLIC_STORE_ID }}

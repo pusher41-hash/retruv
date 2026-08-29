@@ -70,10 +70,14 @@ export default async function LostDetailPage({
 
   // A category can be "sensitive" (masked details, verification-gated)
   // without its photo being blurred — a missing person's photo is the whole
-  // point of a public appeal. Only suppress the public photo when the
-  // category's own config says to blur it.
+  // point of a public appeal. Only suppress the public photo when this
+  // specific item is actually sensitive AND the category's own config says
+  // to blur it — most categories default to blurring, but that default
+  // should never apply to an item that was never flagged sensitive.
   const photos =
-    (isOwner || !fieldConfig.blurSensitivePhotos ? row.item.photoUrls : null) ?? [];
+    (isOwner || !(row.item.isSensitive && fieldConfig.blurSensitivePhotos)
+      ? row.item.photoUrls
+      : null) ?? [];
 
   return (
     <div className="container-app py-8">

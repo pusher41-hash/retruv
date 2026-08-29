@@ -73,15 +73,17 @@ export default async function FoundDetailPage({
   // A missing person's public appeal needs its description and photo
   // visible even though the category is flagged sensitive — only the
   // category's own blur setting (never blurred for persons) gates that.
+  // For everything else, only an item actually flagged sensitive should
+  // ever be masked — a non-sensitive item in a category that defaults to
+  // blurring (almost all of them) must still show its real photo.
+  const isBlurred = row.item.isSensitive && fieldConfig.blurSensitivePhotos;
   const description =
-    isFinder || !fieldConfig.blurSensitivePhotos
+    isFinder || !isBlurred
       ? sanitizePublicDescription(row.item.description, row.item.isSensitive)
       : "Document sensible trouvé. Les détails identifiants sont masqués. Si c'est le vôtre, déclarez votre perte et passez la vérification.";
 
   const photos =
-    (isFinder || !fieldConfig.blurSensitivePhotos
-      ? row.item.photoUrls
-      : row.item.blurredPhotoUrls) ?? [];
+    (isFinder || !isBlurred ? row.item.photoUrls : row.item.blurredPhotoUrls) ?? [];
 
   return (
     <div className="container-app py-8">
@@ -126,7 +128,7 @@ export default async function FoundDetailPage({
               ))}
             </div>
           ) : null}
-          {fieldConfig.blurSensitivePhotos && !isFinder && photos.length > 0 ? (
+          {isBlurred && !isFinder && photos.length > 0 ? (
             <p className="text-xs text-slate-500">
               Photos floutées automatiquement (document sensible).
             </p>
