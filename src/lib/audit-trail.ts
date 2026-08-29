@@ -1,34 +1,34 @@
-import { promises as fs } from "fs";
-import path from "path";
-
-// Outside `public/`, like private-uploads — never reachable by any HTTP
-// route. A second, independent copy of every audit event: even someone who
-// obtains the app's own DB credentials and runs `DELETE FROM audit_logs`
-// (RETRUV_LANDMINES.md #9 / RETRUV_REDTEAM.md P4-2) does not touch this file.
-const AUDIT_DIR = path.join(process.cwd(), "audit-trail");
-const AUDIT_FILE = path.join(AUDIT_DIR, "audit.ndjson");
-
-let dirReady: Promise<void> | null = null;
-function ensureAuditDir(): Promise<void> {
-  if (!dirReady) {
-    dirReady = fs.mkdir(AUDIT_DIR, { recursive: true }).then(() => undefined);
-  }
-  return dirReady;
-}
+import { randomUUID } from "crypto";
+import { put } from "@vercel/blob";
 
 /**
- * Appends one line of newline-delimited JSON. Never opened for truncate or
- * random-offset writes — only ever appended to, and only by this function.
- * Best-effort: a filesystem hiccup here must never break the action being
- * audited, so failures are swallowed.
+ * A second, independent copy of every audit event, outside the app's own
+ * database: even someone who obtains the DB credentials and runs `DELETE
+ * FROM audit_logs` (RETRUV_LANDMINES.md #9 / RETRUV_REDTEAM.md P4-2) does
+ * not touch these. Originally written to local disk (`fs.appendFile`
+ * against a growing `audit.ndjson`) — that never actually worked in
+ * production (Vercel's serverless functions have no writable/persistent
+ * filesystem outside /tmp, same root cause as the photo-upload bug fixed
+ * the same day, see project memory) so this secondary trail had silently
+ * been a no-op since launch.
+ *
+ * Each event is now its own small object in the private Blob store — not
+ * one appended-to file — since Blob has no append primitive; writing a
+ * whole growing file back on every single audit event would mean an
+ * ever-larger read-modify-write on every request. Many small immutable
+ * objects fits the object-storage model Blob actually offers.
  */
 export async function appendAuditTrail(
   entry: Record<string, unknown>
 ): Promise<void> {
   try {
-    await ensureAuditDir();
-    const line = JSON.stringify({ ...entry, loggedAt: new Date().toISOString() });
-    await fs.appendFile(AUDIT_FILE, line + "\n", { encoding: "utf8" });
+    const loggedAt = new Date();
+    const pathname = `audit-trail/${loggedAt.toISOString()}-${randomUUID()}.json`;
+    await put(pathname, JSON.stringify({ ...entry, loggedAt: loggedAt.toISOString() }), {
+      access: "private",
+      contentType: "application/json",
+      addRandomSuffix: false,
+    });
   } catch {
     // Secondary trail only — the primary record is the DB row.
   }
