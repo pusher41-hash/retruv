@@ -105,6 +105,20 @@ export async function POST(req: Request) {
       return jsonError("Accès refusé", 403);
     }
 
+    // /securite documents this as a hard rule ("interdite par le système")
+    // for sensitive documents (CNI, passeport, permis...) — it wasn't
+    // actually enforced anywhere before this check. A direct, unmonitored
+    // handover is exactly the scenario RETRUV_REDTEAM.md's "faux passeport"
+    // walkthrough warns about; only a staffed Point RETRUV or an
+    // authorized authority is allowed to hand over a sensitive item.
+    const isSensitiveItem = row.lost.isSensitive || row.found.isSensitive;
+    if (isSensitiveItem && !["recovery_point", "authority"].includes(data.method)) {
+      return jsonError(
+        "Pour un document sensible, la récupération doit passer par un Point RETRUV ou une autorité habilitée — la rencontre directe et la livraison ne sont pas autorisées.",
+        403
+      );
+    }
+
     if (data.method === "recovery_point" && data.recoveryPointId) {
       const [rp] = await db
         .select()

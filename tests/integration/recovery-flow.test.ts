@@ -22,7 +22,9 @@ async function readRestitutionCode(recoveryId: string): Promise<string> {
   return rec.code;
 }
 
-async function declareMatchAndVerify(): Promise<{
+async function declareMatchAndVerify(
+  category: { parent: string; child?: string } = { parent: "objets", child: "cles" }
+): Promise<{
   loser: TestSession;
   finder: TestSession;
   matchId: string;
@@ -30,12 +32,13 @@ async function declareMatchAndVerify(): Promise<{
 }> {
   const loser = await registerUser({ fullName: "Fatou Sawadogo" });
   const finder = await registerUser({ fullName: "Ibrahim Traoré" });
-  const { categoryId } = await findCategory("objets", "cles");
+  const { categoryId, subcategoryId } = await findCategory(category.parent, category.child);
 
   const lostRes = await authedFetch(loser, "/api/lost", {
     method: "POST",
     body: JSON.stringify({
       categoryId,
+      subcategoryId,
       title: "Trousseau de clés perdu",
       description: "Trousseau avec porte-clés en forme de ballon de foot",
       color: "Argenté",
@@ -50,6 +53,7 @@ async function declareMatchAndVerify(): Promise<{
     method: "POST",
     body: JSON.stringify({
       categoryId,
+      subcategoryId,
       title: "Trousseau de clés trouvé",
       description: "Trousseau trouvé avec porte-clés ballon de foot",
       color: "Argenté",
@@ -222,6 +226,40 @@ describe("recovery + restitution code + reputation", () => {
     const scoreAfterOwner = (await meAfterOwner.json()).user.reputationScore;
     expect(scoreAfterOwner).toBe(scoreBeforeOwner + 10);
   });
+
+  it(
+    "refuses direct meetup / delivery for a sensitive document, matching what /securite claims",
+    async () => {
+      const { loser, matchId } = await declareMatchAndVerify({
+        parent: "documents",
+        child: "cni",
+      });
+
+      const directRes = await authedFetch(loser, "/api/recoveries", {
+        method: "POST",
+        body: JSON.stringify({ matchId, method: "direct_meetup" }),
+      });
+      expect(directRes.status).toBe(403);
+
+      const deliveryRes = await authedFetch(loser, "/api/recoveries", {
+        method: "POST",
+        body: JSON.stringify({ matchId, method: "delivery" }),
+      });
+      expect(deliveryRes.status).toBe(403);
+
+      const pointsRes = await authedFetch(loser, "/api/points");
+      const point = (await pointsRes.json()).points[0];
+      const viaPointRes = await authedFetch(loser, "/api/recoveries", {
+        method: "POST",
+        body: JSON.stringify({
+          matchId,
+          method: "recovery_point",
+          recoveryPointId: point.id,
+        }),
+      });
+      expect(viaPointRes.status).toBe(201);
+    }
+  );
 });
 
 describe("reports", () => {
