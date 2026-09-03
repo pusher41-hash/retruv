@@ -17,7 +17,7 @@ export function handleApiError(err: unknown) {
       return jsonError("Accès refusé", 403);
     }
     console.error(err);
-    return jsonError(err.message || "Erreur serveur", 500);
+    return jsonError("Erreur serveur", 500);
   }
   return jsonError("Erreur serveur", 500);
 }

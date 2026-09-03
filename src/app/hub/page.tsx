@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   lostItems,
@@ -6,6 +6,7 @@ import {
   matches,
   categories,
 } from "@/db/schema";
+import { PUBLICLY_VISIBLE_MODERATION_STATUSES } from "@/lib/moderation";
 import { PageHeader, StatusBadge, MatchBadge } from "@/components/ui";
 import { formatRelative, formatCFA, statusColor } from "@/lib/utils";
 import { COUNTRIES, countryName } from "@/lib/constants";
@@ -15,6 +16,11 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+const PUBLICLY_VISIBLE_STATUSES_SQL = sql.join(
+  PUBLICLY_VISIBLE_MODERATION_STATUSES.map((s) => sql`${s}`),
+  sql`, `
+);
+
 type CountryStat = { country: string; lost: number; found: number; matches: number };
 
 async function getCountryStats(): Promise<CountryStat[]> {
@@ -22,10 +28,12 @@ async function getCountryStats(): Promise<CountryStat[]> {
     db
       .select({ country: lostItems.country, count: sql<number>`count(*)::int` })
       .from(lostItems)
+      .where(inArray(lostItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES))
       .groupBy(lostItems.country),
     db
       .select({ country: foundItems.country, count: sql<number>`count(*)::int` })
       .from(foundItems)
+      .where(inArray(foundItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES))
       .groupBy(foundItems.country),
     db
       .select({ country: lostItems.country, count: sql<number>`count(*)::int` })
@@ -76,6 +84,7 @@ export default async function GlobalHubPage({
     JOIN categories c ON l.category_id = c.id
     WHERE (${selected === "ALL" ? sql`true` : sql`l.country = ${selected}`})
       AND l.status = 'active'
+      AND l.moderation_status IN (${PUBLICLY_VISIBLE_STATUSES_SQL})
     UNION ALL
     SELECT
       'found' AS type,
@@ -91,6 +100,7 @@ export default async function GlobalHubPage({
     JOIN categories c ON f.category_id = c.id
     WHERE (${selected === "ALL" ? sql`true` : sql`f.country = ${selected}`})
       AND f.status = 'active'
+      AND f.moderation_status IN (${PUBLICLY_VISIBLE_STATUSES_SQL})
     ORDER BY created_at DESC
     LIMIT 40
   `);
