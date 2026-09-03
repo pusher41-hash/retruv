@@ -123,6 +123,24 @@ export default async function AdminPage() {
         action={<ArchiveExpiredButton />}
       />
 
+      <div className="mb-6 flex flex-wrap gap-2">
+        <Link href="/admin/moderation" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
+          Modération
+        </Link>
+        <Link href="/admin/users" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
+          Utilisateurs
+        </Link>
+        <Link href="/admin/reports" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
+          Signalements
+        </Link>
+        <Link href="/admin/fraud-flags" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
+          Flags fraude
+        </Link>
+        <Link href="/admin/points" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
+          Points RETRUV
+        </Link>
+      </div>
+
       {pendingModerationCount > 0 ? (
         <Link
           href="/admin/moderation"
@@ -203,9 +221,10 @@ export default async function AdminPage() {
           <h2 className="font-bold text-retruv-navy">Utilisateurs récents</h2>
           <div className="mt-4 space-y-2">
             {recentUsers.map((u) => (
-              <div
+              <Link
                 key={u.id}
-                className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm"
+                href={`/admin/users/${u.id}`}
+                className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-sm hover:bg-slate-100"
               >
                 <div>
                   <p className="font-semibold text-slate-900">{u.fullName}</p>
@@ -220,7 +239,7 @@ export default async function AdminPage() {
                     {formatRelative(u.createdAt)}
                   </span>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         </section>
@@ -253,19 +272,41 @@ export default async function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {recentLogs.map((l) => (
-                  <tr key={l.id} className="border-t border-slate-100">
-                    <td className="px-2 py-2 font-medium text-slate-800">
-                      {l.action}
-                    </td>
-                    <td className="px-2 py-2 text-slate-500">
-                      {l.entityType ?? "—"} {l.entityId ? `· ${l.entityId.slice(0, 8)}` : ""}
-                    </td>
-                    <td className="px-2 py-2 text-slate-400">
-                      {formatRelative(l.createdAt)}
-                    </td>
-                  </tr>
-                ))}
+                {recentLogs.map((l) => {
+                  const entityHref =
+                    !l.entityId
+                      ? null
+                      : l.entityType === "lost_item"
+                        ? `/lost/${l.entityId}`
+                        : l.entityType === "found_item"
+                          ? `/found/${l.entityId}`
+                          : l.entityType === "match"
+                            ? `/matches/${l.entityId}`
+                            : l.entityType === "user"
+                              ? `/admin/users/${l.entityId}`
+                              : null;
+                  return (
+                    <tr key={l.id} className="border-t border-slate-100">
+                      <td className="px-2 py-2 font-medium text-slate-800">
+                        {l.action}
+                      </td>
+                      <td className="px-2 py-2 text-slate-500">
+                        {entityHref ? (
+                          <Link href={entityHref} className="hover:text-retruv-blue hover:underline">
+                            {l.entityType} · {l.entityId?.slice(0, 8)}
+                          </Link>
+                        ) : (
+                          <>
+                            {l.entityType ?? "—"} {l.entityId ? `· ${l.entityId.slice(0, 8)}` : ""}
+                          </>
+                        )}
+                      </td>
+                      <td className="px-2 py-2 text-slate-400">
+                        {formatRelative(l.createdAt)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

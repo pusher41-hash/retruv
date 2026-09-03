@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { desc, eq, or } from "drizzle-orm";
+import { desc, eq, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import { conversations, matches, messages, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
@@ -28,25 +28,45 @@ export default async function MessagesPage() {
     )
     .orderBy(desc(conversations.updatedAt));
 
-  const items = [];
-  for (const c of convos) {
+  const convoIds = convos.map((c) => c.conversation.id);
+  const otherIds = [
+    ...new Set(
+      convos.map((c) =>
+        c.conversation.participant1Id === user.id
+          ? c.conversation.participant2Id
+          : c.conversation.participant1Id
+      )
+    ),
+  ];
+
+  const [otherUsers, recentMessages] = convoIds.length
+    ? await Promise.all([
+        db.select().from(users).where(inArray(users.id, otherIds)),
+        db
+          .select()
+          .from(messages)
+          .where(inArray(messages.conversationId, convoIds))
+          .orderBy(desc(messages.createdAt)),
+      ])
+    : [[], []];
+
+  const otherById = new Map(otherUsers.map((u) => [u.id, u]));
+  const lastByConvoId = new Map<string, (typeof recentMessages)[number]>();
+  for (const m of recentMessages) {
+    if (!lastByConvoId.has(m.conversationId)) lastByConvoId.set(m.conversationId, m);
+  }
+
+  const items = convos.map((c) => {
     const otherId =
       c.conversation.participant1Id === user.id
         ? c.conversation.participant2Id
         : c.conversation.participant1Id;
-    const [other] = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, otherId))
-      .limit(1);
-    const [last] = await db
-      .select()
-      .from(messages)
-      .where(eq(messages.conversationId, c.conversation.id))
-      .orderBy(desc(messages.createdAt))
-      .limit(1);
-    items.push({ c, other, last });
-  }
+    return {
+      c,
+      other: otherById.get(otherId),
+      last: lastByConvoId.get(c.conversation.id),
+    };
+  });
 
   return (
     <div className="container-app py-8">

@@ -22,14 +22,10 @@ export default async function ModerationQueuePage() {
   return (
     <div className="container-app py-8">
       <PageHeader
+        back={{ href: "/admin", label: "Dashboard admin" }}
         eyebrow="Modération"
         title="File d'attente — Personnes disparues"
         description="Ces déclarations ne sont ni publiques ni mises en correspondance tant qu'elles ne sont pas validées ici."
-        action={
-          <Link href="/admin" className="btn btn-secondary">
-            Retour au dashboard
-          </Link>
-        }
       />
 
       {total === 0 ? (

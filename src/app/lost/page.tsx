@@ -15,15 +15,18 @@ const subcategories = alias(categories, "subcategories");
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 24;
+
 export default async function LostListPage({
   searchParams,
 }: {
-  searchParams: Promise<{ city?: string }>;
+  searchParams: Promise<{ city?: string; page?: string }>;
 }) {
   const sp = await searchParams;
   const city = sp.city;
+  const page = Math.max(1, Number(sp.page) || 1);
 
-  const [rows, topCities] = await Promise.all([
+  const [allRows, topCities] = await Promise.all([
     db
       .select({ item: lostItems, category: categories, subcategorySlug: subcategories.slug })
       .from(lostItems)
@@ -36,7 +39,8 @@ export default async function LostListPage({
         )
       )
       .orderBy(desc(lostItems.createdAt))
-      .limit(50),
+      .limit(PAGE_SIZE + 1)
+      .offset((page - 1) * PAGE_SIZE),
     // Cities actually in use worldwide, not a fixed list from one country.
     db
       .select({ city: lostItems.city, count: sql<number>`count(*)::int` })
@@ -46,6 +50,11 @@ export default async function LostListPage({
       .orderBy(desc(sql`count(*)`))
       .limit(8),
   ]);
+
+  const rows = allRows.slice(0, PAGE_SIZE);
+  const hasMore = allRows.length > PAGE_SIZE;
+  const pageHref = (p: number) =>
+    `/lost?${city ? `city=${encodeURIComponent(city)}&` : ""}page=${p}`;
 
   return (
     <div className="container-app py-8">
@@ -131,6 +140,22 @@ export default async function LostListPage({
           </div>
         ) : null}
       </div>
+
+      {page > 1 || hasMore ? (
+        <div className="mt-6 flex items-center justify-center gap-3">
+          {page > 1 ? (
+            <Link href={pageHref(page - 1)} className="btn btn-secondary">
+              ← Précédent
+            </Link>
+          ) : null}
+          <span className="text-sm font-semibold text-slate-500">Page {page}</span>
+          {hasMore ? (
+            <Link href={pageHref(page + 1)} className="btn btn-secondary">
+              Suivant →
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

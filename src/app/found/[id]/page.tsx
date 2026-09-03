@@ -88,6 +88,7 @@ export default async function FoundDetailPage({
   return (
     <div className="container-app py-8">
       <PageHeader
+        back={{ href: "/found", label: "Objets trouvés" }}
         eyebrow={row.category.nameFr}
         title={row.item.title}
         description={`Signalé ${formatRelative(row.item.createdAt)} · ${row.item.city}`}
@@ -180,9 +181,18 @@ export default async function FoundDetailPage({
             <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
               Trouveur
             </p>
-            <p className="mt-2 text-lg font-bold text-retruv-navy">
-              {row.user.fullName.split(" ")[0]}
-            </p>
+            {isStaff ? (
+              <Link
+                href={`/admin/users/${row.user.id}`}
+                className="mt-2 block text-lg font-bold text-retruv-navy hover:text-retruv-blue hover:underline"
+              >
+                {row.user.fullName.split(" ")[0]}
+              </Link>
+            ) : (
+              <p className="mt-2 text-lg font-bold text-retruv-navy">
+                {row.user.fullName.split(" ")[0]}
+              </p>
+            )}
             <div className="mt-2">
               <ReputationBadge level={row.user.reputationLevel} />
             </div>

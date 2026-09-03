@@ -121,6 +121,7 @@ export default async function MatchDetailPage({
   return (
     <div className="container-app py-8">
       <PageHeader
+        back={{ href: "/matches", label: "Correspondances" }}
         eyebrow="Correspondance"
         title="Analyse RETRUV"
         description={
@@ -257,14 +258,32 @@ export default async function MatchDetailPage({
               <p className="text-xs font-bold uppercase text-slate-500">
                 {isPerson ? "Déclarant" : "Propriétaire"}
               </p>
-              <p className="mt-1 font-bold">{owner?.fullName.split(" ")[0]}</p>
+              {isStaff && owner ? (
+                <Link
+                  href={`/admin/users/${owner.id}`}
+                  className="mt-1 block font-bold hover:text-retruv-blue hover:underline"
+                >
+                  {owner.fullName.split(" ")[0]}
+                </Link>
+              ) : (
+                <p className="mt-1 font-bold">{owner?.fullName.split(" ")[0]}</p>
+              )}
               {owner ? <ReputationBadge level={owner.reputationLevel} /> : null}
             </div>
             <div className="card p-4">
               <p className="text-xs font-bold uppercase text-slate-500">
                 {isPerson ? "A signalé l'avoir vue" : "Trouveur"}
               </p>
-              <p className="mt-1 font-bold">{finder?.fullName.split(" ")[0]}</p>
+              {isStaff && finder ? (
+                <Link
+                  href={`/admin/users/${finder.id}`}
+                  className="mt-1 block font-bold hover:text-retruv-blue hover:underline"
+                >
+                  {finder.fullName.split(" ")[0]}
+                </Link>
+              ) : (
+                <p className="mt-1 font-bold">{finder?.fullName.split(" ")[0]}</p>
+              )}
               {finder ? <ReputationBadge level={finder.reputationLevel} /> : null}
             </div>
           </div>

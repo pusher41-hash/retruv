@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { notifications } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
@@ -21,14 +21,10 @@ export default async function NotificationsPage() {
     .limit(50);
 
   // mark all read
-  for (const n of rows) {
-    if (!n.isRead) {
-      await db
-        .update(notifications)
-        .set({ isRead: true })
-        .where(eq(notifications.id, n.id));
-    }
-  }
+  await db
+    .update(notifications)
+    .set({ isRead: true })
+    .where(and(eq(notifications.userId, user.id), eq(notifications.isRead, false)));
 
   return (
     <div className="container-app py-8">

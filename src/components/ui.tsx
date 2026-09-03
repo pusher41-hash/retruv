@@ -1,5 +1,6 @@
 import { cn, statusColor, statusLabel, getMatchLevelColor, getMatchLevelLabel, formatRelative, reputationLabel } from "@/lib/utils";
-import { PackageSearch, type LucideIcon } from "lucide-react";
+import { ArrowLeft, PackageSearch, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 export function Badge({
@@ -65,15 +66,26 @@ export function PageHeader({
   title,
   description,
   action,
+  back,
 }: {
   eyebrow?: string;
   title: string;
   description?: string;
   action?: ReactNode;
+  back?: { href: string; label: string };
 }) {
   return (
     <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
+        {back ? (
+          <Link
+            href={back.href}
+            className="mb-2 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-retruv-blue"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {back.label}
+          </Link>
+        ) : null}
         {eyebrow ? (
           <p className="mb-1 text-xs font-bold uppercase tracking-[0.14em] text-retruv-sky">
             {eyebrow}
