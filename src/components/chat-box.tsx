@@ -105,12 +105,17 @@ export function ChatBox({ conversationId }: { conversationId: string }) {
   return (
     <div className="card flex h-[70vh] flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-        <div>
-          <p className="font-bold text-retruv-navy">{otherName}</p>
-          <p className="text-xs text-slate-500">
-            Messagerie interne sécurisée
-            {phone ? ` · ${phone}` : " · numéros masqués"}
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-retruv-navy text-sm font-black text-white">
+            {otherName.charAt(0).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-bold text-retruv-navy">{otherName}</p>
+            <p className="text-xs text-slate-500">
+              Messagerie interne sécurisée
+              {phone ? ` · ${phone}` : " · numéros masqués"}
+            </p>
+          </div>
         </div>
         <button
           type="button"

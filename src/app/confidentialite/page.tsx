@@ -33,7 +33,7 @@ export default function ConfidentialitePage() {
         </div>
       </div>
 
-      <div className="card mt-6 p-6 bg-gradient-to-r from-retruv-blue to-retruv-teal text-white">
+      <div className="card mt-6 p-6 bg-retruv-navy text-white">
         <h3 className="text-xl font-black">Notre engagement</h3>
         <p className="mt-2 text-sm font-medium text-white/95 leading-relaxed">
           RETRUV est conçu selon le principe : <strong>le minimum de données nécessaires pour récupérer l&apos;objet</strong>. Nous ne vendons pas de données. Nous ne publions pas de numéros complets. Nous supprimons automatiquement. La confiance n&apos;est pas un argument de vente — c&apos;est la fondation technique du produit.

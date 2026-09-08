@@ -52,13 +52,14 @@ export default function MinimalNav() {
   return (
     <header className="sticky top-0 z-50 nav-blur">
       <div className="container-app flex h-16 items-center justify-between gap-3">
-        <Link href="/" className="flex items-center gap-2 shrink-0">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#0e4d92] to-[#0d9488] text-lg font-black text-white shadow-lg shadow-sky-200/60">
+        <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[#0b1f3a] text-lg font-black text-white shadow-sm">
             R
+            <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full bg-[#0d9488] ring-2 ring-white" />
           </div>
           <div>
-            <div className="text-lg font-black tracking-tight text-[#0b1f3a] leading-none">RETRUV</div>
-            <div className="hidden sm:block text-[10px] font-extrabold uppercase tracking-[0.16em] text-slate-500">International</div>
+            <div className="text-lg font-extrabold tracking-tight text-[#0b1f3a] leading-none">RETRUV</div>
+            <div className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">International</div>
           </div>
         </Link>
 
@@ -68,9 +69,9 @@ export default function MinimalNav() {
               key={l.href}
               href={l.href}
               className={cn(
-                "rounded-full px-3 py-2 text-sm font-bold transition",
+                "rounded-lg px-3 py-2 text-sm font-bold transition",
                 pathname === l.href
-                  ? "bg-gradient-to-r from-[#0b1f3a] to-[#0e4d92] text-white shadow-lg shadow-blue-900/25"
+                  ? "bg-[#0e4d92] text-white shadow-md shadow-blue-900/20"
                   : "text-slate-700 hover:bg-slate-100 hover:text-[#0e4d92]"
               )}
             >
@@ -78,7 +79,7 @@ export default function MinimalNav() {
             </Link>
           ))}
           {me?.role === "admin" || me?.role === "moderator" ? (
-            <Link href="/admin" className={cn("rounded-full px-3 py-2 text-sm font-bold transition", pathname.startsWith("/admin") ? "bg-gradient-to-r from-[#0b1f3a] to-[#0e4d92] text-white shadow-lg shadow-blue-900/25" : "text-slate-700 hover:bg-slate-100")}>Admin</Link>
+            <Link href="/admin" className={cn("rounded-lg px-3 py-2 text-sm font-bold transition", pathname.startsWith("/admin") ? "bg-[#0e4d92] text-white shadow-md shadow-blue-900/20" : "text-slate-700 hover:bg-slate-100")}>Admin</Link>
           ) : null}
         </nav>
 

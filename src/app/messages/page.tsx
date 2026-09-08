@@ -95,13 +95,18 @@ export default async function MessagesPage() {
               className="card block p-4"
             >
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-bold text-slate-900">
-                    {other?.fullName.split(" ")[0] ?? "Utilisateur"}
-                  </p>
-                  <p className="mt-1 line-clamp-1 text-sm text-slate-600">
-                    {last?.content ?? "Aucun message"}
-                  </p>
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-retruv-navy text-sm font-black text-white">
+                    {(other?.fullName ?? "?").charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-slate-900">
+                      {other?.fullName.split(" ")[0] ?? "Utilisateur"}
+                    </p>
+                    <p className="mt-1 line-clamp-1 text-sm text-slate-600">
+                      {last?.content ?? "Aucun message"}
+                    </p>
+                  </div>
                 </div>
                 <MatchBadge level={c.match.level} score={c.match.score} />
               </div>

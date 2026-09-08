@@ -205,9 +205,29 @@ export function reputationLabel(level: string): string {
   return map[level] ?? level;
 }
 
-export function formatCFA(amount: number | null | undefined): string {
+/**
+ * Formats a reward amount in whatever currency it was actually declared in
+ * (see `rewardCurrency` in db/schema.ts) — RETRUV is worldwide, so hardcoding
+ * "FCFA" for every reward regardless of the declarer's country would be
+ * exactly the kind of implicit "this is a West African product" signal the
+ * platform is trying to avoid.
+ */
+export function formatMoney(
+  amount: number | null | undefined,
+  currency?: string | null
+): string {
   if (amount == null) return "";
-  return new Intl.NumberFormat("fr-FR").format(amount) + " FCFA";
+  const code = currency || "XOF";
+  // XOF/XAF (CFA francs) have no widely-recognized currency symbol in
+  // Intl's data — "FCFA" is how people actually refer to them.
+  if (code === "XOF" || code === "XAF") {
+    return `${new Intl.NumberFormat("fr-FR").format(amount)} FCFA`;
+  }
+  try {
+    return new Intl.NumberFormat("fr-FR", { style: "currency", currency: code }).format(amount);
+  } catch {
+    return `${new Intl.NumberFormat("fr-FR").format(amount)} ${code}`;
+  }
 }
 
 export function approximateLocation(

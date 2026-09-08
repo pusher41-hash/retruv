@@ -2,11 +2,21 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { Alert, Field } from "@/components/ui";
 import { TurnstileWidget } from "@/components/turnstile-widget";
 import { CategoryIcon } from "@/lib/category-icons";
 import { COLORS, ITEM_CONDITIONS } from "@/lib/constants";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
+import { Loader2 } from "lucide-react";
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-xs font-bold uppercase tracking-[0.08em] text-slate-400">
+      {children}
+    </p>
+  );
+}
 
 type Cat = {
   id: string;
@@ -188,9 +198,19 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card space-y-5 p-5 sm:p-6">
-      {error ? <Alert type="error">{error}</Alert> : null}
-      {success ? <Alert type="success">{success}</Alert> : null}
+    <form onSubmit={onSubmit} className="card space-y-6 p-5 sm:p-6">
+      <AnimatePresence mode="popLayout">
+        {error ? (
+          <motion.div key="err" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <Alert type="error">{error}</Alert>
+          </motion.div>
+        ) : null}
+        {success ? (
+          <motion.div key="ok" initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <Alert type="success">{success}</Alert>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {fieldConfig.safetyNotice ? (
         <Alert type="error">
@@ -200,56 +220,57 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
         <Alert type="warning">
           Catégorie sensible détectée. Les numéros complets, photos lisibles et
           données personnelles ne seront jamais affichés publiquement. Utilisez
-          uniquement des identifiants partiellement masqués (ex: BF****84).
+          uniquement des identifiants partiellement masqués (ex : {fieldConfig.idPartialPlaceholder}).
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Catégorie">
-          <select
-            className="select"
-            required
-            value={parentId}
-            onChange={(e) => {
-              setParentId(e.target.value);
-              setSubId("");
-            }}
-          >
-            <option value="">Choisir...</option>
-            {tree.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameFr}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Sous-catégorie">
-          <select
-            className="select"
-            value={subId}
-            onChange={(e) => setSubId(e.target.value)}
-            disabled={!parentId}
-          >
-            <option value="">Optionnel</option>
-            {children.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nameFr}
-              </option>
-            ))}
-          </select>
-        </Field>
+      <div className="space-y-3">
+        <SectionTitle>Que souhaitez-vous déclarer ?</SectionTitle>
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {tree.map((c) => {
+            const isSelected = c.id === parentId;
+            return (
+              <button
+                key={c.id}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => {
+                  setParentId(c.id);
+                  setSubId("");
+                }}
+                className={`flex flex-col items-center gap-1.5 rounded-lg border-1.5 p-3 text-center transition ${
+                  isSelected
+                    ? "border-retruv-blue bg-sky-50 text-retruv-blue shadow-xs"
+                    : "border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                }`}
+                style={{ borderWidth: "1.5px" }}
+              >
+                <CategoryIcon slug={c.slug} className="h-6 w-6" />
+                <span className="text-xs font-semibold leading-tight">{c.nameFr}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {parentId && children.length > 0 ? (
+          <Field label="Sous-catégorie (optionnel)">
+            <select
+              className="select"
+              value={subId}
+              onChange={(e) => setSubId(e.target.value)}
+            >
+              <option value="">Optionnel</option>
+              {children.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nameFr}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
       </div>
 
-      {selectedParent ? (
-        <div className="flex items-center gap-2 text-sm font-semibold text-slate-500">
-          <CategoryIcon
-            slug={selectedSub?.slug ?? selectedParent.slug}
-            className="h-4 w-4"
-          />
-          {selectedSub?.nameFr ?? selectedParent.nameFr}
-        </div>
-      ) : null}
-
+      <SectionTitle>Description</SectionTitle>
       <Field label="Titre court">
         <input
           className="input"
@@ -280,12 +301,12 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
         <div className="grid gap-4 sm:grid-cols-3">
           {fieldConfig.showBrand ? (
             <Field label="Marque">
-              <input className="input" name="brand" placeholder="Samsung, TVS..." />
+              <input className="input" name="brand" placeholder={fieldConfig.brandPlaceholder} />
             </Field>
           ) : null}
           {fieldConfig.showModel ? (
             <Field label="Modèle">
-              <input className="input" name="model" placeholder="Galaxy A54..." />
+              <input className="input" name="model" placeholder={fieldConfig.modelPlaceholder} />
             </Field>
           ) : null}
           {fieldConfig.showColor ? (
@@ -334,32 +355,33 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
           className="textarea"
           name="distinctiveFeatures"
           maxLength={1000}
-          placeholder="Ex: déchirure sur le côté, coque fissurée..."
+          placeholder={fieldConfig.distinctivePlaceholder}
         />
       </Field>
 
       {fieldConfig.showSerial || fieldConfig.showIdPartial ? (
         <div className="grid gap-4 sm:grid-cols-2">
           {fieldConfig.showSerial ? (
-            <Field label="N° série partiel" hint="Masqué, ex: ****7291">
-              <input className="input" name="serialPartial" placeholder="****7291" />
+            <Field label={fieldConfig.serialLabel} hint={fieldConfig.serialHint}>
+              <input className="input" name="serialPartial" placeholder={fieldConfig.serialPlaceholder} />
             </Field>
           ) : null}
           {fieldConfig.showIdPartial ? (
-            <Field label="Identifiant partiel" hint="Pour documents: BF****84">
+            <Field label={fieldConfig.idPartialLabel} hint={fieldConfig.idPartialHint}>
               <input
                 className="input"
                 name="idPartialMasked"
-                placeholder="BF****84"
+                placeholder={fieldConfig.idPartialPlaceholder}
               />
             </Field>
           ) : null}
         </div>
       ) : null}
 
+      <SectionTitle>Lieu &amp; date</SectionTitle>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field
-          label={mode === "lost" ? "Date de perte" : "Date de trouvaille"}
+          label={mode === "lost" ? fieldConfig.eventDateLabelLost : fieldConfig.eventDateLabelFound}
         >
           <input className="input" type="date" name="eventDate" />
         </Field>
@@ -373,16 +395,16 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Ville">
+        <Field label={fieldConfig.cityLabel}>
           <input
             className="input"
             name="city"
             required
-            placeholder="Ex : Milan, Dakar, Lyon..."
+            placeholder="Ex : Rome, Milan, Lyon..."
           />
         </Field>
         <Field label="Quartier">
-          <input className="input" name="district" placeholder="Ouaga 2000..." />
+          <input className="input" name="district" placeholder="Ex : Trastevere, Centro..." />
         </Field>
       </div>
 
@@ -398,8 +420,8 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
         <>
           {fieldConfig.showReward ? (
             <Field
-              label="Récompense (FCFA, optionnel)"
-              hint="Jamais obligatoire."
+              label="Récompense (optionnel)"
+              hint="Dans votre devise locale. Jamais obligatoire."
             >
               <input
                 className="input"
@@ -459,6 +481,7 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
         </>
       )}
 
+      <SectionTitle>Photos</SectionTitle>
       <Field
         label="Photos (optionnel)"
         hint={
@@ -511,6 +534,7 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
       <TurnstileWidget />
 
       <button className="btn btn-primary w-full" disabled={loading || !parentId || uploadingPhoto}>
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {loading
           ? "Enregistrement & analyse..."
           : mode === "lost"

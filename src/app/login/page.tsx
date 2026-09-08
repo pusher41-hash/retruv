@@ -36,6 +36,12 @@ export default function LoginPage() {
   return (
     <div className="container-app py-8">
       <div className="mx-auto max-w-md">
+        <div className="mb-6 flex justify-center">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-retruv-navy text-2xl font-black text-white">
+            R
+            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-retruv-teal ring-2 ring-white" />
+          </div>
+        </div>
         <PageHeader
           eyebrow="Compte"
           title="Connexion"
@@ -43,12 +49,12 @@ export default function LoginPage() {
         />
         <form onSubmit={onSubmit} className="card space-y-4 p-6">
           {error ? <Alert type="error">{error}</Alert> : null}
-          <Field label="Téléphone" hint="Ex: +22670111111">
+          <Field label="Téléphone" hint="Format international, ex : +39, +33, +226...">
             <input
               className="input"
               name="phone"
               required
-              placeholder="+22670..."
+              placeholder="+39 320 000 0000"
               autoComplete="tel"
             />
           </Field>

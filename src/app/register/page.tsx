@@ -43,6 +43,12 @@ export default function RegisterPage() {
   return (
     <div className="container-app py-8">
       <div className="mx-auto max-w-lg">
+        <div className="mb-6 flex justify-center">
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-retruv-navy text-2xl font-black text-white">
+            R
+            <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-retruv-teal ring-2 ring-white" />
+          </div>
+        </div>
         <PageHeader
           eyebrow="Compte"
           title="Créer un compte"
@@ -53,12 +59,12 @@ export default function RegisterPage() {
           <Field label="Nom complet">
             <input className="input" name="fullName" required minLength={2} />
           </Field>
-          <Field label="Téléphone" hint="Format international recommandé">
+          <Field label="Téléphone" hint="Format international recommandé, ex : +39, +33, +226...">
             <input
               className="input"
               name="phone"
               required
-              placeholder="+22670..."
+              placeholder="+39 320 000 0000"
             />
           </Field>
           <Field label="Email (optionnel)">

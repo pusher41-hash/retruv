@@ -41,7 +41,7 @@ export default function PartnersPage() {
         ))}
       </div>
 
-      <div className="card mt-6 p-6 bg-gradient-to-r from-retruv-navy to-[#123f73] text-white">
+      <div className="card mt-6 p-6 bg-retruv-navy text-white">
         <h3 className="text-xl font-black">Le modèle en 3 piliers</h3>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div>

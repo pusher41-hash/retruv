@@ -22,10 +22,18 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { MatchActions } from "@/components/match-actions";
-import { formatDate, formatRelative } from "@/lib/utils";
+import { PopIn } from "@/components/motion";
+import { formatDate, formatRelative, getMatchLevelLabel } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { getCategoryFieldConfig, isPersonCategory } from "@/lib/category-fields";
 import { Calendar, IdCard, MapPin, Palette } from "lucide-react";
+
+const RING_COLOR: Record<string, string> = {
+  weak: "#94a3b8",
+  possible: "#f59e0b",
+  probable: "#f97316",
+  very_probable: "#059669",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -129,13 +137,36 @@ export default async function MatchDetailPage({
             ? "Le score indique une probabilité, pas une preuve. Contactez la police avant toute retrouvaille organisée par vos soins."
             : "Le score indique une probabilité, pas une preuve. La vérification protège contre les faux propriétaires."
         }
-        action={
-          <div className="flex flex-wrap gap-2">
+      />
+
+      <PopIn className="card mb-4 flex flex-col items-center gap-4 p-6 text-center sm:flex-row sm:text-left">
+        <div
+          className="relative flex h-24 w-24 shrink-0 items-center justify-center rounded-full"
+          style={{
+            background: `conic-gradient(${RING_COLOR[row.match.level] ?? RING_COLOR.weak} ${Math.round(
+              row.match.score
+            )}%, #e2e8f0 0)`,
+          }}
+        >
+          <div className="flex h-[4.6rem] w-[4.6rem] flex-col items-center justify-center rounded-full bg-white">
+            <span className="text-2xl font-black text-retruv-navy">
+              {Math.round(row.match.score)}%
+            </span>
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+            Score de correspondance
+          </p>
+          <p className="mt-1 text-lg font-extrabold text-retruv-navy">
+            {getMatchLevelLabel(row.match.level)}
+          </p>
+          <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
             <MatchBadge level={row.match.level} score={row.match.score} />
             <StatusBadge status={row.match.status} />
           </div>
-        }
-      />
+        </div>
+      </PopIn>
 
       {fieldConfig.safetyNotice ? (
         <div className="mb-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900">

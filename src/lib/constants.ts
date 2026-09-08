@@ -52,6 +52,16 @@ export function countryName(code: string): string {
   return COUNTRIES.find((c) => c.code === code)?.name ?? code;
 }
 
+/**
+ * Currency for a country code — used so a reward amount is tagged in the
+ * declarer's own currency instead of inheriting the `reward_currency`
+ * column's default (see db/schema.ts), which would otherwise silently tag
+ * every declaration worldwide in West African CFA francs.
+ */
+export function countryCurrency(code: string | null | undefined): string {
+  return COUNTRIES.find((c) => c.code === code)?.currency ?? "EUR";
+}
+
 export const COLORS = [
   "Noir",
   "Blanc",
@@ -141,10 +151,14 @@ export const CATEGORY_TREE = [
     children: [
       { slug: "moto", nameFr: "Moto", nameEn: "Motorcycle", icon: "🏍️", isSensitive: false },
       { slug: "velo", nameFr: "Vélo", nameEn: "Bicycle", icon: "🚲", isSensitive: false },
-      { slug: "vehicule", nameFr: "Véhicule", nameEn: "Vehicle", icon: "🚙", isSensitive: false },
+      { slug: "vehicule", nameFr: "Voiture", nameEn: "Car", icon: "🚗", isSensitive: false },
+      { slug: "camion", nameFr: "Camion", nameEn: "Truck", icon: "🚚", isSensitive: false },
+      { slug: "bus", nameFr: "Bus", nameEn: "Bus", icon: "🚌", isSensitive: false },
       { slug: "plaque", nameFr: "Plaque d'immatriculation", nameEn: "License plate", icon: "🔢", isSensitive: true },
       { slug: "doc-vehicule", nameFr: "Documents de véhicule", nameEn: "Vehicle papers", icon: "📑", isSensitive: true },
       { slug: "casque", nameFr: "Casque", nameEn: "Helmet", icon: "⛑️", isSensitive: false },
+      { slug: "cle-vehicule", nameFr: "Clé de véhicule", nameEn: "Vehicle key", icon: "🔑", isSensitive: false },
+      { slug: "transport-autre", nameFr: "Autre", nameEn: "Other", icon: "❓", isSensitive: false },
     ],
   },
   {
@@ -156,8 +170,10 @@ export const CATEGORY_TREE = [
     children: [
       { slug: "chien", nameFr: "Chien", nameEn: "Dog", icon: "🐕", isSensitive: false },
       { slug: "chat", nameFr: "Chat", nameEn: "Cat", icon: "🐈", isSensitive: false },
+      { slug: "oiseau", nameFr: "Oiseau", nameEn: "Bird", icon: "🦜", isSensitive: false },
+      { slug: "lapin", nameFr: "Lapin", nameEn: "Rabbit", icon: "🐇", isSensitive: false },
       { slug: "betail", nameFr: "Bétail", nameEn: "Livestock", icon: "🐄", isSensitive: false },
-      { slug: "autre-animal", nameFr: "Autre animal", nameEn: "Other animal", icon: "🦜", isSensitive: false },
+      { slug: "autre-animal", nameFr: "Autre animal", nameEn: "Other animal", icon: "🐾", isSensitive: false },
     ],
   },
 ] as const;

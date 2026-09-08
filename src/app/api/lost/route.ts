@@ -4,7 +4,7 @@ import { db } from "@/db";
 import { categories, lostItems, uploads, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
-import { CAPTCHA_DECLARATION_THRESHOLD, DECLARATION_EXPIRY_DAYS } from "@/lib/constants";
+import { CAPTCHA_DECLARATION_THRESHOLD, DECLARATION_EXPIRY_DAYS, countryCurrency } from "@/lib/constants";
 import { extractKeywords } from "@/lib/utils";
 import { runMatchingForLostItem } from "@/lib/matching";
 import {
@@ -219,6 +219,9 @@ export async function POST(req: Request) {
         latitude: data.latitude ?? null,
         longitude: data.longitude ?? null,
         rewardAmount: data.rewardAmount ?? null,
+        rewardCurrency: data.rewardAmount
+          ? countryCurrency(data.country || user.country || "IT")
+          : undefined,
         privateNotes: data.privateNotes || null,
         photoUrls: sensitive && fieldConfig.blurSensitivePhotos ? [] : photos.publicUrls,
         blurredPhotoUrls: photos.blurredUrls,
@@ -228,7 +231,7 @@ export async function POST(req: Request) {
           : "auto_approved",
         status: "active",
         expiresAt,
-        country: data.country || user.country || "BF",
+        country: data.country || user.country || "IT",
         verificationHints: data.distinctiveFeatures
           ? [data.distinctiveFeatures]
           : [],

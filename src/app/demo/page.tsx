@@ -66,7 +66,7 @@ export default function DemoPage() {
       <div className="space-y-4">
         {steps.map((s) => (
           <div key={s.num} className="card p-6 flex gap-5 items-start">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-retruv-navy to-retruv-blue shadow-lg shadow-sky-200">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-retruv-navy">
               <s.icon className="h-7 w-7 text-white" strokeWidth={2} />
             </div>
             <div>
@@ -80,7 +80,7 @@ export default function DemoPage() {
         ))}
       </div>
 
-      <div className="card mt-6 bg-gradient-to-r from-retruv-navy to-[#123f73] p-6 text-white">
+      <div className="card mt-6 bg-retruv-navy p-6 text-white">
         <h2 className="text-xl font-black">Le résultat du scénario</h2>
         <ul className="mt-3 space-y-2 text-sm text-sky-100">
           {[

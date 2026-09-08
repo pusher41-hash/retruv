@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { recoveryPoints } from "@/db/schema";
 import { PageHeader, StatCard } from "@/components/ui";
+import { StaggerGroup, StaggerItem } from "@/components/motion";
 import { CheckCircle2, Clock, MapPin, Package, Phone, User } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -29,9 +30,10 @@ export default async function PointsPage() {
         <StatCard label="Objets récupérés" value={recovered} icon={CheckCircle2} />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <StaggerGroup className="grid gap-3 md:grid-cols-2">
         {points.map((p) => (
-          <div key={p.id} className="card p-5">
+          <StaggerItem key={p.id}>
+          <div className="card p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
@@ -71,8 +73,9 @@ export default async function PointsPage() {
               ) : null}
             </div>
           </div>
+          </StaggerItem>
         ))}
-      </div>
+      </StaggerGroup>
     </div>
   );
 }

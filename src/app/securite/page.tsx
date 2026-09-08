@@ -53,7 +53,7 @@ export default function RecoverySafetyPage() {
         </div>
       </div>
 
-      <div className="card mt-6 p-6 bg-gradient-to-r from-[#0b1f3a] to-[#0e4d92] text-white">
+      <div className="card mt-6 p-6 bg-retruv-navy text-white">
         <h2 className="text-2xl font-black">Règle de récupération sécurisée</h2>
         <p className="mt-3 text-base font-medium text-sky-100 leading-relaxed">
           Pour tout objet <strong>sensible</strong> (document officiel) : la récupération se fait uniquement via un <strong>Point RETRUV</strong> (mairie, campus, gare avec responsable) ou via <strong>autorité habilitée</strong>. La rencontre directe avec le trouveur dans un lieu public est <strong>interdite par le système</strong> pour ces catégories. Pour les objets non sensibles (téléphone, sac, clé) : rencontre directe autorisée <strong>si et seulement si</strong> la vérification de propriété est passée et que les deux parties utilisent le chat interne.

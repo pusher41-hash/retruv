@@ -10,7 +10,7 @@ import {
   ReputationBadge,
   StatusBadge,
 } from "@/components/ui";
-import { formatCFA, formatDate, formatRelative } from "@/lib/utils";
+import { formatMoney, formatDate, formatRelative } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { CategoryIcon } from "@/lib/category-icons";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
@@ -206,7 +206,7 @@ export default async function LostDetailPage({
               <p className="mt-4 text-sm">
                 Récompense proposée :{" "}
                 <span className="font-bold text-amber-700">
-                  {formatCFA(row.item.rewardAmount)}
+                  {formatMoney(row.item.rewardAmount, row.item.rewardCurrency)}
                 </span>
               </p>
             ) : null}

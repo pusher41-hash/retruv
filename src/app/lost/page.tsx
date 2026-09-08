@@ -4,7 +4,7 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { categories, lostItems } from "@/db/schema";
 import { PageHeader, StatusBadge } from "@/components/ui";
-import { formatCFA, formatRelative } from "@/lib/utils";
+import { formatMoney, formatRelative } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
 import { PUBLICLY_VISIBLE_MODERATION_STATUSES } from "@/lib/moderation";
@@ -125,7 +125,7 @@ export default async function LostListPage({
                   <span>{formatRelative(item.createdAt)}</span>
                   {item.rewardAmount ? (
                     <span className="font-semibold text-amber-700">
-                      Récompense {formatCFA(item.rewardAmount)}
+                      Récompense {formatMoney(item.rewardAmount, item.rewardCurrency)}
                     </span>
                   ) : null}
                 </div>

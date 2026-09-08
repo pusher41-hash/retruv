@@ -10,12 +10,13 @@ import {
   recoveryPoints,
   recoveries,
 } from "@/db/schema";
-import { formatCFA, formatRelative } from "@/lib/utils";
+import { formatMoney, formatRelative } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
 import { PUBLICLY_VISIBLE_MODERATION_STATUSES } from "@/lib/moderation";
 import { MatchBadge, StatusBadge } from "@/components/ui";
 import { CategoryIcon } from "@/lib/category-icons";
+import { FadeIn, StaggerGroup, StaggerItem } from "@/components/motion";
 import { Globe2, MapPin, Search, Sparkles } from "lucide-react";
 
 const subcategories = alias(categories, "subcategories");
@@ -85,48 +86,42 @@ export default async function HomePage() {
   return (
     <div>
       <section className="container-app py-8 sm:py-12">
-        {/* Badge international */}
-        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-retruv-blue/10 to-retruv-teal/10 px-4 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-retruv-blue border border-retruv-blue/10">
-          <Globe2 className="h-3.5 w-3.5" />
-          Plateforme mondiale — Regroupement intelligent par pays
-        </div>
         <div className="hero-grid">
-          <div className="card overflow-hidden p-6 sm:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-retruv-blue">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Disponible dans le monde entier
+          <FadeIn className="card overflow-hidden p-6 sm:p-8">
+            <div className="inline-flex items-center gap-2 rounded-md bg-sky-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-retruv-blue">
+              <Globe2 className="h-3.5 w-3.5" />
+              Réseau mondial de confiance
             </div>
-            <h1 className="mt-4 max-w-xl text-4xl font-black leading-[1.05] tracking-tight text-retruv-navy sm:text-5xl">
-              RETRUV
+            <h1 className="mt-4 max-w-xl text-retruv-navy">
+              Ce qui est perdu quelque part peut être retrouvé ailleurs.
             </h1>
-            <p className="mt-3 text-xl font-semibold text-retruv-sky sm:text-2xl">
-              Un regroupement intelligent, sans frontières.
-            </p>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-slate-600">
-              RETRUV n&apos;est ancré dans aucun pays en particulier. C&apos;est une plateforme mondiale où chaque pays — Italie, France, Canada, Brésil, Maroc, Sénégal, Inde, Japon, et au-delà — devient un nœud du même réseau de confiance. Perdu en Italie ? Trouvé au Canada ? Le système connecte au-delà des frontières, sur tous les continents.
+              RETRUV relie les déclarations de perte et de trouvaille à travers les pays —
+              Italie, France, Canada, et au-delà. Un seul réseau, une correspondance
+              intelligente, des identités protégées.
             </p>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <Link
                 href="/declare/lost"
-                className="action-lost flex min-h-28 flex-col justify-between rounded-[1.4rem] p-5 shadow-lg shadow-sky-200/60 transition hover:-translate-y-0.5"
+                className="action-lost flex min-h-28 flex-col justify-between rounded-[var(--radius-xl)] p-5 transition hover:-translate-y-0.5"
               >
-                <Search className="h-8 w-8 text-white" strokeWidth={2.25} />
+                <Search className="h-7 w-7 text-white" strokeWidth={2.25} />
                 <div>
-                  <div className="text-3xl font-black text-white drop-shadow-md">J&apos;AI PERDU</div>
-                  <div className="mt-1 text-sm font-bold text-white/95 drop-shadow">
+                  <div className="text-2xl font-extrabold text-white sm:text-3xl">J&apos;AI PERDU</div>
+                  <div className="mt-1 text-sm font-semibold text-white/90">
                     Déclarer un objet perdu
                   </div>
                 </div>
               </Link>
               <Link
                 href="/declare/found"
-                className="action-found flex min-h-28 flex-col justify-between rounded-[1.4rem] p-5 shadow-lg shadow-teal-200/60 transition hover:-translate-y-0.5"
+                className="action-found flex min-h-28 flex-col justify-between rounded-[var(--radius-xl)] p-5 transition hover:-translate-y-0.5"
               >
-                <Sparkles className="h-8 w-8 text-white" strokeWidth={2.25} />
+                <Sparkles className="h-7 w-7 text-white" strokeWidth={2.25} />
                 <div>
-                  <div className="text-3xl font-black text-white drop-shadow-md">J&apos;AI TROUVÉ</div>
-                  <div className="mt-1 text-sm font-bold text-white/95 drop-shadow">
+                  <div className="text-2xl font-extrabold text-white sm:text-3xl">J&apos;AI TROUVÉ</div>
+                  <div className="mt-1 text-sm font-semibold text-white/90">
                     Signaler un objet trouvé
                   </div>
                 </div>
@@ -143,7 +138,7 @@ export default async function HomePage() {
               <Link href="/points" className="btn btn-secondary text-sm">
                 Points RETRUV
               </Link>
-              <Link href="/hub" className="btn btn-secondary text-sm bg-gradient-to-r from-retruv-blue to-retruv-teal text-white border-none">
+              <Link href="/hub" className="btn btn-secondary text-sm">
                 <Globe2 className="h-4 w-4" />
                 Monde
               </Link>
@@ -151,14 +146,14 @@ export default async function HomePage() {
                 Carte
               </Link>
             </div>
-          </div>
+          </FadeIn>
 
-          <div className="grid gap-4">
-          <div className="card bg-gradient-to-br from-retruv-navy via-[#0e3a6d] to-retruv-teal p-6 text-white">
-            <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.16em] text-sky-200">
-              <Globe2 className="h-3.5 w-3.5" />
-              Impact mondial — Regroupement par pays
-            </p>
+          <FadeIn delay={0.1} className="grid gap-4">
+            <div className="card bg-retruv-navy p-6 text-white">
+              <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-sky-200">
+                <Globe2 className="h-3.5 w-3.5" />
+                Impact du réseau
+              </p>
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <div className="stat-pill">
                   <div className="text-2xl font-black">{lostCount?.c ?? 0}</div>
@@ -179,33 +174,33 @@ export default async function HomePage() {
                   <div className="text-xs text-sky-100">Récupérations</div>
                 </div>
               </div>
-              <p className="mt-5 text-sm text-sky-50/90">
+              <p className="mt-5 text-sm text-sky-50/80">
                 {pointsCount?.c ?? 0} points de récupération partenaires actifs.
               </p>
             </div>
 
-        <div className="card bg-white border-2 border-slate-100 p-5">
-          <h2 className="font-extrabold text-retruv-navy text-lg">Comment ça marche ?</h2>
-              <ol className="mt-4 space-y-3 text-sm text-slate-800 font-medium">
-                  <li className="flex gap-3 text-[#0f172a] font-bold text-base">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0e4d92] text-xs font-black text-white shadow-md">1</span>
-                  <span>Vous déclarez une perte ou une trouvaille en quelques secondes.</span>
+            <div className="card p-5">
+              <h2 className="font-extrabold text-retruv-navy text-lg">Comment ça marche ?</h2>
+              <ol className="mt-4 space-y-3">
+                <li className="flex gap-3 text-sm font-semibold text-slate-800">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-retruv-blue text-xs font-black text-white">1</span>
+                  <span className="pt-0.5">Vous déclarez une perte ou une trouvaille en quelques secondes.</span>
                 </li>
-                  <li className="flex gap-3 text-[#0f172a] font-bold text-base">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0d9488] text-xs font-black text-white shadow-md">2</span>
-                  <span>RETRUV calcule un score de correspondance multi-signaux.</span>
+                <li className="flex gap-3 text-sm font-semibold text-slate-800">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-retruv-teal text-xs font-black text-white">2</span>
+                  <span className="pt-0.5">RETRUV calcule un score de correspondance multi-signaux.</span>
                 </li>
-                  <li className="flex gap-3 text-[#0f172a] font-bold text-base">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#f59e0b] text-xs font-black text-white shadow-md">3</span>
-                  <span>La propriété est vérifiée sans exposer les données sensibles.</span>
+                <li className="flex gap-3 text-sm font-semibold text-slate-800">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-retruv-gold text-xs font-black text-white">3</span>
+                  <span className="pt-0.5">La propriété est vérifiée sans exposer les données sensibles.</span>
                 </li>
-                  <li className="flex gap-3 text-[#0f172a] font-bold text-base">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#059669] text-xs font-black text-white shadow-md">4</span>
-                  <span>Vous organisez la récupération via chat ou Point RETRUV.</span>
+                <li className="flex gap-3 text-sm font-semibold text-slate-800">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#059669] text-xs font-black text-white">4</span>
+                  <span className="pt-0.5">Vous organisez la récupération via chat ou Point RETRUV.</span>
                 </li>
               </ol>
             </div>
-          </div>
+          </FadeIn>
         </div>
       </section>
 
@@ -221,7 +216,7 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3">
+          <StaggerGroup className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-retruv-navy text-lg">Objets perdus</h3>
               <Link href="/lost" className="text-sm font-semibold text-retruv-blue">
@@ -229,8 +224,8 @@ export default async function HomePage() {
               </Link>
             </div>
             {recentLost.map(({ item, category }) => (
+              <StaggerItem key={item.id}>
               <Link
-                key={item.id}
                 href={`/lost/${item.id}`}
                 className="card block p-4 transition hover:-translate-y-0.5"
               >
@@ -257,7 +252,7 @@ export default async function HomePage() {
                         <>
                           <span>·</span>
                           <span className="font-semibold text-amber-700">
-                            {formatCFA(item.rewardAmount)}
+                            {formatMoney(item.rewardAmount, item.rewardCurrency)}
                           </span>
                         </>
                       ) : null}
@@ -265,10 +260,11 @@ export default async function HomePage() {
                   </div>
                 </div>
               </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGroup>
 
-          <div className="space-y-3">
+          <StaggerGroup className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-extrabold text-retruv-navy text-lg">Objets trouvés</h3>
               <Link href="/found" className="text-sm font-semibold text-retruv-teal">
@@ -278,8 +274,8 @@ export default async function HomePage() {
             {recentFound.map(({ item, category, subcategorySlug }) => {
               const fieldConfig = getCategoryFieldConfig(category.slug, subcategorySlug);
               return (
+              <StaggerItem key={item.id}>
               <Link
-                key={item.id}
                 href={`/found/${item.id}`}
                 className="card block p-4 transition hover:-translate-y-0.5"
               >
@@ -313,9 +309,10 @@ export default async function HomePage() {
                   </div>
                 </div>
               </Link>
+              </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGroup>
         </div>
       </section>
 
@@ -324,9 +321,10 @@ export default async function HomePage() {
           <h2 className="mb-4 text-xl font-extrabold text-retruv-navy">
             Correspondances intelligentes
           </h2>
-          <div className="grid gap-3 md:grid-cols-3">
+          <StaggerGroup className="grid gap-3 md:grid-cols-3">
             {topMatches.map((m) => (
-              <Link key={m.id} href={`/matches/${m.id}`} className="card p-5">
+              <StaggerItem key={m.id}>
+              <Link href={`/matches/${m.id}`} className="card p-5 block">
                 <MatchBadge level={m.level} score={m.score} />
                 <p className="mt-3 text-sm text-slate-600">
                   Le moteur RETRUV a croisé catégorie, description, lieu, date
@@ -336,13 +334,14 @@ export default async function HomePage() {
                   Ce score n&apos;est jamais une preuve absolue de propriété.
                 </p>
               </Link>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerGroup>
         </section>
       ) : null}
 
       <section className="container-app pb-12">
-        <div className="card overflow-hidden bg-gradient-to-r from-retruv-navy to-[#123f73] p-6 text-white sm:p-8">
+        <div className="card overflow-hidden bg-retruv-navy p-6 text-white sm:p-8">
           <div className="grid gap-6 md:grid-cols-[1.3fr_0.7fr] md:items-center">
             <div>
               <h2 className="text-2xl font-black">Perdre n&apos;est plus forcément perdre pour toujours.</h2>

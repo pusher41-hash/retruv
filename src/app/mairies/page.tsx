@@ -38,7 +38,7 @@ export default async function MairiesPage() {
         ) : null}
       </div>
 
-      <div className="mt-6 card p-6 bg-gradient-to-r from-[#0b1f3a] to-[#0e4d92] text-white">
+      <div className="mt-6 card p-6 bg-retruv-navy text-white">
         <h2 className="text-xl font-black">Pourquoi une mairie ?</h2>
         <p className="mt-2 text-sm font-medium text-sky-100 leading-relaxed">
           La mairie n&apos;est pas un guichet de transport ouvert à tout le monde. Elle est un <strong>lieu contrôlé avec un responsable identifiable</strong>, des horaires fixes, un téléphone connu et un statut public. C&apos;est le tiers de confiance idéal pour la récupération d&apos;un document sensible : le propriétaire se présente, montre son identité, reçoit le document, et le retrouve est notifié par le système — sans jamais rencontrer le trouveur face à face.

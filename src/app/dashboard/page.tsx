@@ -17,6 +17,7 @@ import {
   StatusBadge,
 } from "@/components/ui";
 import { formatRelative } from "@/lib/utils";
+import { FadeIn, StaggerGroup, StaggerItem } from "@/components/motion";
 import { Link2, Search, Sparkles, Star } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -68,17 +69,19 @@ export default async function DashboardPage() {
         action={<ReputationBadge level={user.reputationLevel} />}
       />
 
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Objets perdus" value={myLost.length} icon={Search} />
-        <StatCard label="Objets trouvés" value={myFound.length} icon={Sparkles} />
-        <StatCard label="Correspondances" value={myMatches.length} icon={Link2} />
-        <StatCard
-          label="Réputation"
-          value={user.reputationScore}
-          hint={user.city ?? undefined}
-          icon={Star}
-        />
-      </div>
+      <StaggerGroup className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StaggerItem><StatCard label="Objets perdus" value={myLost.length} icon={Search} /></StaggerItem>
+        <StaggerItem><StatCard label="Objets trouvés" value={myFound.length} icon={Sparkles} /></StaggerItem>
+        <StaggerItem><StatCard label="Correspondances" value={myMatches.length} icon={Link2} /></StaggerItem>
+        <StaggerItem>
+          <StatCard
+            label="Réputation"
+            value={user.reputationScore}
+            hint={user.city ?? undefined}
+            icon={Star}
+          />
+        </StaggerItem>
+      </StaggerGroup>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <Link href="/declare/lost" className="btn btn-primary btn-lg">

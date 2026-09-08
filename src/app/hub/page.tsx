@@ -8,7 +8,7 @@ import {
 } from "@/db/schema";
 import { PUBLICLY_VISIBLE_MODERATION_STATUSES } from "@/lib/moderation";
 import { PageHeader, StatusBadge, MatchBadge } from "@/components/ui";
-import { formatRelative, formatCFA, statusColor } from "@/lib/utils";
+import { formatRelative, statusColor } from "@/lib/utils";
 import { COUNTRIES, countryName } from "@/lib/constants";
 import { CategoryIcon } from "@/lib/category-icons";
 import { Globe2 } from "lucide-react";
@@ -112,20 +112,16 @@ export default async function GlobalHubPage({
         title="RETRUV — Regroupement mondial"
         description="Une plateforme sans frontières. Tout le monde, partout, connecté par la confiance."
       />
-      <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#0e4d92] to-[#0d9488] px-4 py-2 text-xs font-extrabold uppercase tracking-[0.14em] text-white border border-white/10 shadow-lg shadow-blue-900/20">
-        <Globe2 className="h-3.5 w-3.5" />
-        Plateforme mondiale — Regroupement intelligent par pays
-      </div>
 
       {/* Hero international */}
-      <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#0b1f3a] via-[#0e3a6d] to-[#0d9488] p-8 shadow-[0_24px_60px_rgba(11,31,58,0.35)]">
+      <section className="relative overflow-hidden rounded-[var(--radius-xl)] bg-retruv-navy p-8">
         <div className="relative z-10 max-w-2xl">
-          <h2 className="text-3xl font-black tracking-tight sm:text-5xl text-white">
+          <h2 className="text-3xl font-black tracking-tight sm:text-4xl text-white">
             Un regroupement par pays, sans distinction.
           </h2>
-          <p className="mt-4 text-base leading-relaxed text-white/95 sm:text-lg">
-            RETRUV n&apos;appartient à aucun pays en particulier. C&apos;est une plateforme mondiale où chaque pays, chaque ville, chaque quartier devient un nœud du même réseau de confiance.
-            Perdu en Italie ? Trouvé au Canada ? Le système connecte au-delà des frontières, sur tous les continents.
+          <p className="mt-4 text-base leading-relaxed text-white/90 sm:text-lg">
+            RETRUV n&apos;appartient à aucun pays en particulier. Chaque pays, chaque ville devient un nœud du même réseau de confiance.
+            Perdu en Italie ? Trouvé au Canada ? Le système connecte au-delà des frontières.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/declare/lost" className="btn btn-accent">
@@ -136,8 +132,6 @@ export default async function GlobalHubPage({
             </Link>
           </div>
         </div>
-        <div className="absolute -right-10 -top-10 h-64 w-64 rounded-full bg-white/5 blur-3xl md:-right-20 md:h-96 md:w-96" />
-        <div className="absolute -bottom-16 -left-16 h-48 w-48 rounded-full bg-teal-400/20 blur-3xl md:h-72 md:w-72" />
       </section>
 
       {/* Regroupement intelligent par pays */}
@@ -214,7 +208,7 @@ export default async function GlobalHubPage({
                 className="card block p-4 transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(11,31,58,0.1)]"
               >
                 <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-retruv-navy to-retruv-blue shadow-md shadow-sky-200">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-retruv-navy">
                     <CategoryIcon slug={item.category_slug} className="h-6 w-6 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -242,7 +236,7 @@ export default async function GlobalHubPage({
 
       {/* CTA international */}
       <section className="mt-10">
-        <div className="card overflow-hidden bg-gradient-to-r from-retruv-navy to-[#123f73] p-6 text-white sm:p-8">
+        <div className="card overflow-hidden bg-retruv-navy p-6 text-white sm:p-8">
           <div className="grid gap-6 md:grid-cols-[1.3fr_0.7fr] md:items-center">
             <div>
               <h2 className="text-2xl font-black tracking-tight">

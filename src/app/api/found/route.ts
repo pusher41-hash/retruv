@@ -257,7 +257,7 @@ export async function POST(req: Request) {
           : "auto_approved",
         status: "active",
         expiresAt,
-        country: data.country || user.country || "BF",
+        country: data.country || user.country || "IT",
       })
       .returning();
 
