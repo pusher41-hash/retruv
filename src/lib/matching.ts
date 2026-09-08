@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   foundItems,
@@ -211,17 +211,10 @@ export function computeMatchScore(
   lost: LostItem,
   found: FoundItem
 ): MatchResult {
-  // Hard filter: category must match (or one is parent of other handled upstream)
-  if (lost.categoryId !== found.categoryId) {
-    // Allow subcategory cross if same parent handled by caller; here strict
-    if (
-      lost.subcategoryId &&
-      found.subcategoryId &&
-      lost.subcategoryId !== found.subcategoryId
-    ) {
-      // still compute but with penalty via category weight = 0
-    }
-  }
+  // Candidates are already filtered to matching categoryId upstream (see
+  // fetchFoundCandidates/fetchLostCandidates), and a mismatch is scored —
+  // not excluded — via breakdown.category below plus the hard multiplier
+  // near the end of this function. There is no separate hard filter here.
 
   const weights = {
     category: 18,
@@ -310,6 +303,22 @@ export function computeMatchScore(
 }
 
 /**
+ * City is a free-text field (see declare-form.tsx), not a controlled list —
+ * "Rome", "ROME", "Roma" and "Rome " (trailing space) are all the same real
+ * city to a human but wouldn't satisfy a strict `eq()`. A lost item and the
+ * found item sitting right next to it in the same city could otherwise
+ * never see each other purely because of capitalization/whitespace, which
+ * matters more now that RETRUV explicitly spans multiple countries where a
+ * city might be typed in a local vs. anglicized spelling.
+ */
+function sameCity(col: typeof foundItems.city | typeof lostItems.city, city: string) {
+  return sql`lower(trim(${col})) = lower(trim(${city}))`;
+}
+function differentCity(col: typeof foundItems.city | typeof lostItems.city, city: string) {
+  return sql`lower(trim(${col})) != lower(trim(${city}))`;
+}
+
+/**
  * Same-city candidates are fetched first (and exclusively, if there are
  * enough of them) so the row cap is spent on the dominant real-world case
  * instead of being filled by unrelated cities in arbitrary DB order.
@@ -318,7 +327,7 @@ export function computeMatchScore(
  * reachable (e.g. an item lost while traveling).
  */
 async function fetchFoundCandidates(lost: LostItem): Promise<FoundItem[]> {
-  const sameCity = await db
+  const candidatesSameCity = await db
     .select()
     .from(foundItems)
     .where(
@@ -328,13 +337,13 @@ async function fetchFoundCandidates(lost: LostItem): Promise<FoundItem[]> {
         inArray(foundItems.moderationStatus, ["auto_approved", "approved"]),
         ne(foundItems.userId, lost.userId),
         eq(foundItems.country, lost.country),
-        eq(foundItems.city, lost.city)
+        sameCity(foundItems.city, lost.city)
       )
     )
     .orderBy(desc(foundItems.createdAt))
     .limit(MATCH_SAME_CITY_LIMIT);
 
-  if (sameCity.length >= MATCH_SAME_CITY_LIMIT) return sameCity;
+  if (candidatesSameCity.length >= MATCH_SAME_CITY_LIMIT) return candidatesSameCity;
 
   const crossCity = await db
     .select()
@@ -346,17 +355,17 @@ async function fetchFoundCandidates(lost: LostItem): Promise<FoundItem[]> {
         inArray(foundItems.moderationStatus, ["auto_approved", "approved"]),
         ne(foundItems.userId, lost.userId),
         eq(foundItems.country, lost.country),
-        ne(foundItems.city, lost.city)
+        differentCity(foundItems.city, lost.city)
       )
     )
     .orderBy(desc(foundItems.createdAt))
     .limit(MATCH_CROSS_CITY_LIMIT);
 
-  return [...sameCity, ...crossCity];
+  return [...candidatesSameCity, ...crossCity];
 }
 
 async function fetchLostCandidates(found: FoundItem): Promise<LostItem[]> {
-  const sameCity = await db
+  const candidatesSameCity = await db
     .select()
     .from(lostItems)
     .where(
@@ -366,13 +375,13 @@ async function fetchLostCandidates(found: FoundItem): Promise<LostItem[]> {
         inArray(lostItems.moderationStatus, ["auto_approved", "approved"]),
         ne(lostItems.userId, found.userId),
         eq(lostItems.country, found.country),
-        eq(lostItems.city, found.city)
+        sameCity(lostItems.city, found.city)
       )
     )
     .orderBy(desc(lostItems.createdAt))
     .limit(MATCH_SAME_CITY_LIMIT);
 
-  if (sameCity.length >= MATCH_SAME_CITY_LIMIT) return sameCity;
+  if (candidatesSameCity.length >= MATCH_SAME_CITY_LIMIT) return candidatesSameCity;
 
   const crossCity = await db
     .select()
@@ -384,13 +393,13 @@ async function fetchLostCandidates(found: FoundItem): Promise<LostItem[]> {
         inArray(lostItems.moderationStatus, ["auto_approved", "approved"]),
         ne(lostItems.userId, found.userId),
         eq(lostItems.country, found.country),
-        ne(lostItems.city, found.city)
+        differentCity(lostItems.city, found.city)
       )
     )
     .orderBy(desc(lostItems.createdAt))
     .limit(MATCH_CROSS_CITY_LIMIT);
 
-  return [...sameCity, ...crossCity];
+  return [...candidatesSameCity, ...crossCity];
 }
 
 export async function runMatchingForLostItem(lostItemId: string) {
@@ -471,14 +480,47 @@ async function persistOneMatch(lost: LostItem, found: FoundItem) {
   await notifyMatch(row.id, lost.userId, found.userId, result.score, result.level);
 
   if (result.score >= 70) {
-    await db
-      .update(lostItems)
-      .set({ status: "matched", updatedAt: new Date() })
-      .where(eq(lostItems.id, lost.id));
-    await db
-      .update(foundItems)
-      .set({ status: "matched", updatedAt: new Date() })
-      .where(eq(foundItems.id, found.id));
+    // Don't let a lower-confidence match contest an item already claimed
+    // by a stronger one — same-run and prior-run alike. Without this, a
+    // found item could accumulate several concurrent "matched" flips (one
+    // per qualifying candidate), each notifying a different user that
+    // *their* item was found, with nothing indicating which is actually
+    // the most likely real match.
+    const [betterOnLost] = await db
+      .select({ id: matches.id })
+      .from(matches)
+      .where(
+        and(
+          eq(matches.lostItemId, lost.id),
+          gt(matches.score, result.score),
+          ne(matches.status, "rejected")
+        )
+      )
+      .limit(1);
+    if (!betterOnLost) {
+      await db
+        .update(lostItems)
+        .set({ status: "matched", updatedAt: new Date() })
+        .where(eq(lostItems.id, lost.id));
+    }
+
+    const [betterOnFound] = await db
+      .select({ id: matches.id })
+      .from(matches)
+      .where(
+        and(
+          eq(matches.foundItemId, found.id),
+          gt(matches.score, result.score),
+          ne(matches.status, "rejected")
+        )
+      )
+      .limit(1);
+    if (!betterOnFound) {
+      await db
+        .update(foundItems)
+        .set({ status: "matched", updatedAt: new Date() })
+        .where(eq(foundItems.id, found.id));
+    }
   }
 
   return row;

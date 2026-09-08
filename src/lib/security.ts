@@ -239,6 +239,41 @@ export function ratingTrustWeight(
   return RATING_TRUST_WEIGHT[raterLevel] ?? 1;
 }
 
+/**
+ * Rejects an obvious duplicate: the same user submitting a declaration with
+ * the same title and city within the last 15 seconds. The declare form only
+ * disables its submit button client-side (`disabled={loading}`) — a fast
+ * double-click before the first render, or a resubmit after a request that
+ * timed out client-side but actually succeeded server-side, previously had
+ * no server-side guard against creating two identical declarations.
+ */
+export async function checkDuplicateDeclaration(
+  table: typeof lostItems | typeof foundItems,
+  userId: string,
+  title: string,
+  city: string
+): Promise<{ ok: boolean; reason?: string }> {
+  const since = new Date(Date.now() - 15 * 1000);
+  const [dup] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(table)
+    .where(
+      and(
+        eq(table.userId, userId),
+        eq(table.title, title),
+        eq(table.city, city),
+        gte(table.createdAt, since)
+      )
+    );
+  if ((dup?.count ?? 0) > 0) {
+    return {
+      ok: false,
+      reason: "Cette déclaration vient déjà d'être envoyée. Vérifiez vos déclarations avant de renvoyer.",
+    };
+  }
+  return { ok: true };
+}
+
 async function countRecentDeclarations(userId: string): Promise<number> {
   const since = new Date(Date.now() - 60 * 60 * 1000);
   const [lostCount] = await db

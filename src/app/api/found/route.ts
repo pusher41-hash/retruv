@@ -4,23 +4,24 @@ import { db } from "@/db";
 import { categories, foundItems, recoveryPoints, uploads, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
-import { CAPTCHA_DECLARATION_THRESHOLD, DECLARATION_EXPIRY_DAYS } from "@/lib/constants";
-import { extractKeywords } from "@/lib/utils";
 import { runMatchingForFoundItem } from "@/lib/matching";
 import {
-  checkDeclarationRate,
   encryptPrivatePayload,
-  isSensitiveCategory,
   logAudit,
   processSensitivePhotos,
   sanitizePublicDescription,
 } from "@/lib/security";
-import { getCategoryFieldConfig, isPersonCategory, sanitizeDetails } from "@/lib/category-fields";
+import { sanitizeDetails } from "@/lib/category-fields";
+import {
+  buildDeclarationKeywords,
+  checkDeclarationGuards,
+  computeDeclarationExpiresAt,
+  resolveDeclarationCategory,
+} from "@/lib/declarations";
 import {
   notifyModeratorsOfPendingReview,
   PUBLICLY_VISIBLE_MODERATION_STATUSES,
 } from "@/lib/moderation";
-import { getClientIp, verifyTurnstileToken } from "@/lib/turnstile";
 
 const createSchema = z.object({
   categoryId: z.string().uuid(),
@@ -133,53 +134,20 @@ export async function POST(req: Request) {
     const body = await req.json();
     const data = createSchema.parse(body);
 
-    const rate = await checkDeclarationRate(user.id);
-    if (!rate.ok) return jsonError(rate.reason ?? "Limite atteinte", 429);
+    const guard = await checkDeclarationGuards({
+      userId: user.id,
+      title: data.title,
+      city: data.city,
+      turnstileToken: data.turnstileToken,
+      table: foundItems,
+      req,
+    });
+    if (!guard.ok) return jsonError(guard.error, guard.status);
 
-    if (rate.count >= CAPTCHA_DECLARATION_THRESHOLD) {
-      const captcha = await verifyTurnstileToken(
-        data.turnstileToken,
-        getClientIp(req)
-      );
-      if (!captcha.ok) {
-        return jsonError(captcha.reason ?? "Vérification anti-robot échouée", 403);
-      }
-    }
-
-    const [cat] = await db
-      .select()
-      .from(categories)
-      .where(eq(categories.id, data.categoryId))
-      .limit(1);
-    if (!cat) return jsonError("Catégorie invalide");
-
-    let subSlug = "";
-    if (data.subcategoryId) {
-      const [sub] = await db
-        .select()
-        .from(categories)
-        .where(eq(categories.id, data.subcategoryId))
-        .limit(1);
-      // A subcategory not actually belonging to the submitted category would
-      // let its own config (e.g. requiresModeration) be silently skipped —
-      // this is the only thing standing between "Enfant disparu" and a
-      // categoryId of "Objets personnels" bypassing mandatory moderation.
-      if (!sub || sub.parentId !== cat.id) {
-        return jsonError("Sous-catégorie invalide pour cette catégorie");
-      }
-      subSlug = sub.slug;
-    }
-
-    const sensitive =
-      cat.isSensitive ||
-      isSensitiveCategory(cat.slug) ||
-      isSensitiveCategory(subSlug);
-    const fieldConfig = getCategoryFieldConfig(cat.slug, subSlug);
+    const resolved = await resolveDeclarationCategory(data.categoryId, data.subcategoryId);
+    if (!resolved.ok) return jsonError(resolved.error);
+    const { cat, subSlug, fieldConfig, sensitive, requiresModeration } = resolved;
     const sanitizedDetails = sanitizeDetails(data.details, cat.slug, subSlug);
-    // Defense in depth: missing-person content is always moderated,
-    // regardless of what fieldConfig resolved to.
-    const requiresModeration =
-      fieldConfig.requiresModeration || isPersonCategory(cat.slug, subSlug);
 
     if (data.recoveryPointId) {
       const [rp] = await db
@@ -190,20 +158,11 @@ export async function POST(req: Request) {
       if (!rp) return jsonError("Point RETRUV invalide");
     }
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + DECLARATION_EXPIRY_DAYS);
+    const expiresAt = computeDeclarationExpiresAt();
 
-    const keywords = extractKeywords(
-      [
-        data.title,
-        data.description,
-        data.distinctiveFeatures,
-        data.brand,
-        data.model,
-        ...(sanitizedDetails ? Object.values(sanitizedDetails) : []),
-      ]
-        .filter(Boolean)
-        .join(" ")
+    const keywords = buildDeclarationKeywords(
+      [data.title, data.description, data.distinctiveFeatures, data.brand, data.model],
+      sanitizedDetails
     );
 
     let pendingUploads: { id: string; privateFilename: string }[] = [];

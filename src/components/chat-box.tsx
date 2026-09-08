@@ -22,6 +22,7 @@ export function ChatBox({ conversationId }: { conversationId: string }) {
   const [isActive, setIsActive] = useState(true);
   const [blockedByMe, setBlockedByMe] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
+  const [confirmingBlock, setConfirmingBlock] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   async function load(signal?: AbortSignal) {
@@ -88,6 +89,13 @@ export function ChatBox({ conversationId }: { conversationId: string }) {
   }
 
   async function toggleBlock() {
+    // Blocking needs a confirmation step first — unblocking doesn't, it's
+    // the reversible direction.
+    if (!blockedByMe && !confirmingBlock) {
+      setConfirmingBlock(true);
+      return;
+    }
+    setConfirmingBlock(false);
     setLoading(true);
     setError("");
     const res = await fetch(`/api/messages/${conversationId}/block`, {
@@ -117,14 +125,35 @@ export function ChatBox({ conversationId }: { conversationId: string }) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={toggleBlock}
-          disabled={loading}
-          className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-        >
-          {blockedByMe ? "Débloquer" : "Bloquer"}
-        </button>
+        {confirmingBlock ? (
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setConfirmingBlock(false)}
+              disabled={loading}
+              className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+            >
+              Annuler
+            </button>
+            <button
+              type="button"
+              onClick={toggleBlock}
+              disabled={loading}
+              className="rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+            >
+              Confirmer
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={toggleBlock}
+            disabled={loading}
+            className="rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+          >
+            {blockedByMe ? "Débloquer" : "Bloquer"}
+          </button>
+        )}
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50/70 p-4">

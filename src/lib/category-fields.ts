@@ -212,19 +212,23 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
   "carte-etudiant": {
     titlePlaceholderLost: "Ex : Carte d'étudiant perdue sur le campus",
     idPartialLabel: "Numéro d'étudiant (partiel)",
+    distinctivePlaceholder: "Ex : photo, autocollant, coin écorné",
   },
   "carte-pro": {
     titlePlaceholderLost: "Ex : Carte professionnelle perdue",
     idPartialLabel: "Numéro de badge (partiel)",
+    distinctivePlaceholder: "Ex : logo, dragonne, autocollant au dos",
   },
   "carte-electeur": {
     titlePlaceholderLost: "Ex : Carte d'électeur perdue",
     idPartialLabel: "Numéro d'électeur (partiel)",
+    distinctivePlaceholder: "Ex : coin écorné, tampon visible",
   },
   "carte-bancaire": {
     titlePlaceholderLost: "Ex : Carte bancaire perdue",
     idPartialLabel: "4 derniers chiffres uniquement",
     idPartialPlaceholder: "Ex : ****4321",
+    distinctivePlaceholder: "Ex : carte rayée, autocollant personnalisé",
   },
   diplome: {
     titlePlaceholderLost: "Ex : Diplôme perdu lors d'un déménagement",
@@ -408,6 +412,7 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
   },
   casque: {
     showModel: false,
+    showSerial: false,
     titlePlaceholderLost: "Ex : Casque de moto noir perdu",
     brandPlaceholder: "Ex : Shark, AGV, HJC",
     distinctivePlaceholder: "Ex : visière teintée, autocollants sur la coque",
@@ -421,7 +426,9 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
   },
   "transport-autre": {
     titlePlaceholderLost: "Ex : Trottinette électrique perdue",
+    titlePlaceholderFound: "Ex : Trottinette retrouvée près de la gare",
     brandPlaceholder: "Ex : Xiaomi, Decathlon",
+    modelPlaceholder: "Ex : préciser si connu",
   },
 
   // ── Animaux ────────────────────────────────────────────────────────────

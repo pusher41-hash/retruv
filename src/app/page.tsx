@@ -24,64 +24,64 @@ const subcategories = alias(categories, "subcategories");
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [lostCount] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(lostItems);
-  const [foundCount] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(foundItems);
-  const [matchCount] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(matches);
-  const [recoveredCount] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(recoveries)
-    .where(eq(recoveries.status, "completed"));
-  const [pointsCount] = await db
-    .select({ c: sql<number>`count(*)::int` })
-    .from(recoveryPoints);
-
-  const recentLost = await db
-    .select({
-      item: lostItems,
-      category: categories,
-      subcategorySlug: subcategories.slug,
-    })
-    .from(lostItems)
-    .innerJoin(categories, eq(lostItems.categoryId, categories.id))
-    .leftJoin(subcategories, eq(lostItems.subcategoryId, subcategories.id))
-    .where(
-      and(
-        eq(lostItems.status, "active"),
-        inArray(lostItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
+  // The most-visited page on the site, hit by every anonymous visitor —
+  // these 8 queries have no dependency on one another, so running them
+  // sequentially (the previous behavior) added their latencies together
+  // instead of taking only the slowest one.
+  const [
+    [lostCount],
+    [foundCount],
+    [matchCount],
+    [recoveredCount],
+    [pointsCount],
+    recentLost,
+    recentFound,
+    topMatches,
+  ] = await Promise.all([
+    db.select({ c: sql<number>`count(*)::int` }).from(lostItems),
+    db.select({ c: sql<number>`count(*)::int` }).from(foundItems),
+    db.select({ c: sql<number>`count(*)::int` }).from(matches),
+    db
+      .select({ c: sql<number>`count(*)::int` })
+      .from(recoveries)
+      .where(eq(recoveries.status, "completed")),
+    db.select({ c: sql<number>`count(*)::int` }).from(recoveryPoints),
+    db
+      .select({
+        item: lostItems,
+        category: categories,
+        subcategorySlug: subcategories.slug,
+      })
+      .from(lostItems)
+      .innerJoin(categories, eq(lostItems.categoryId, categories.id))
+      .leftJoin(subcategories, eq(lostItems.subcategoryId, subcategories.id))
+      .where(
+        and(
+          eq(lostItems.status, "active"),
+          inArray(lostItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
+        )
       )
-    )
-    .orderBy(desc(lostItems.createdAt))
-    .limit(4);
-
-  const recentFound = await db
-    .select({
-      item: foundItems,
-      category: categories,
-      subcategorySlug: subcategories.slug,
-    })
-    .from(foundItems)
-    .innerJoin(categories, eq(foundItems.categoryId, categories.id))
-    .leftJoin(subcategories, eq(foundItems.subcategoryId, subcategories.id))
-    .where(
-      and(
-        eq(foundItems.status, "active"),
-        inArray(foundItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
+      .orderBy(desc(lostItems.createdAt))
+      .limit(4),
+    db
+      .select({
+        item: foundItems,
+        category: categories,
+        subcategorySlug: subcategories.slug,
+      })
+      .from(foundItems)
+      .innerJoin(categories, eq(foundItems.categoryId, categories.id))
+      .leftJoin(subcategories, eq(foundItems.subcategoryId, subcategories.id))
+      .where(
+        and(
+          eq(foundItems.status, "active"),
+          inArray(foundItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
+        )
       )
-    )
-    .orderBy(desc(foundItems.createdAt))
-    .limit(4);
-
-  const topMatches = await db
-    .select()
-    .from(matches)
-    .orderBy(desc(matches.score))
-    .limit(3);
+      .orderBy(desc(foundItems.createdAt))
+      .limit(4),
+    db.select().from(matches).orderBy(desc(matches.score)).limit(3),
+  ]);
 
   return (
     <div>
