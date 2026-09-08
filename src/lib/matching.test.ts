@@ -1,6 +1,13 @@
-import { describe, expect, it } from "vitest";
+import crypto from "crypto";
+import { beforeAll, describe, expect, it } from "vitest";
 import { computeMatchScore } from "./matching";
+import { encryptIdNumber } from "./security";
 import type { FoundItem, LostItem } from "@/db/schema";
+
+beforeAll(() => {
+  // encryptIdNumber/decryptIdNumber read this lazily per call — see security.test.ts.
+  process.env.RETRUV_ENC_KEY = crypto.randomBytes(32).toString("base64");
+});
 
 const CATEGORY_PASSEPORT = "11111111-1111-1111-1111-111111111111";
 const CATEGORY_TELEPHONE = "22222222-2222-2222-2222-222222222222";
@@ -142,6 +149,28 @@ describe("computeMatchScore", () => {
       makeFoundItem({ idPartialMasked: "BF998877" })
     );
     expect(withSerial.score).toBeGreaterThan(withoutSerial.score);
+  });
+
+  it("boosts serial score to max when full encrypted ID numbers match", () => {
+    const sameId = encryptIdNumber("AB1234567IT");
+    const withoutFullId = computeMatchScore(
+      makeLostItem({ idPartialMasked: null }),
+      makeFoundItem({ idPartialMasked: null })
+    );
+    const withMatchingFullId = computeMatchScore(
+      makeLostItem({ idPartialMasked: null, idFullEncrypted: sameId }),
+      makeFoundItem({ idPartialMasked: null, idFullEncrypted: sameId })
+    );
+    expect(withMatchingFullId.breakdown.serial).toBe(1);
+    expect(withMatchingFullId.score).toBeGreaterThan(withoutFullId.score);
+  });
+
+  it("does not boost when full encrypted ID numbers differ", () => {
+    const result = computeMatchScore(
+      makeLostItem({ idPartialMasked: null, idFullEncrypted: encryptIdNumber("AB1234567IT") }),
+      makeFoundItem({ idPartialMasked: null, idFullEncrypted: encryptIdNumber("ZZ0000000FR") })
+    );
+    expect(result.breakdown.serial).toBe(0);
   });
 
   it("treats an implausible found-before-lost date as a red flag, not a bonus", () => {
