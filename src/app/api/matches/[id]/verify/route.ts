@@ -19,6 +19,7 @@ import {
   checkVerificationRate,
   createNotification,
   createNotifications,
+  decryptIdNumber,
   flagFraud,
   logAudit,
 } from "@/lib/security";
@@ -145,7 +146,21 @@ export async function POST(req: Request, { params }: Params) {
     }
 
     const { answers } = answerSchema.parse(body);
-    const score = scoreVerificationAnswers(verif.questions ?? [], answers);
+    let score = scoreVerificationAnswers(verif.questions ?? [], answers);
+
+    // The "numéro complet" question (see buildVerificationQuestions) is
+    // deliberately stored with no expectedHint — verifications.questions is
+    // plaintext at rest, and baking the decrypted number in there would
+    // undo the point of encrypting idFullEncrypted. Compare it here
+    // instead, decrypting fresh and only for the duration of this request.
+    const idAnswer = answers.serial_end;
+    if (row.lost.idFullEncrypted && idAnswer) {
+      const realId = decryptIdNumber(row.lost.idFullEncrypted);
+      if (realId && realId.trim().toLowerCase() === idAnswer.trim().toLowerCase()) {
+        score = Math.max(score, 95);
+      }
+    }
+
     const attemptsUsed = verif.attemptsUsed + 1;
     const passed = score >= 70;
 

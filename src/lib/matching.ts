@@ -12,7 +12,7 @@ import {
   MATCH_SAME_CITY_LIMIT,
   MATCH_THRESHOLD,
 } from "./constants";
-import { createNotifications } from "./security";
+import { createNotifications, decryptIdNumber } from "./security";
 import {
   daysBetween,
   extractKeywords,
@@ -254,6 +254,18 @@ export function computeMatchScore(
   const serialA = lost.serialPartial || lost.idPartialMasked;
   const serialB = found.serialPartial || found.idPartialMasked;
   breakdown.serial = partialIdScore(serialA, serialB);
+
+  // When both declarations captured the real, complete document number
+  // (encrypted — see idFullEncrypted), an exact match is about as strong a
+  // same-item signal as RETRUV can get, far more reliable than comparing
+  // two masked strings that only ever expose a couple of characters each.
+  // Decrypting here is a local, synchronous crypto op — no I/O — so this
+  // stays safe to call from the matching engine's hot path.
+  const fullA = decryptIdNumber(lost.idFullEncrypted);
+  const fullB = decryptIdNumber(found.idFullEncrypted);
+  if (fullA && fullB && fullA.trim().toLowerCase() === fullB.trim().toLowerCase()) {
+    breakdown.serial = 1;
+  }
 
   // If serial strongly matches, boost confidence
   let totalWeight = 0;
@@ -641,7 +653,21 @@ export function buildVerificationQuestions(lost: LostItem): {
     },
   ];
 
-  if (lost.serialPartial || lost.idPartialMasked) {
+  if (lost.idFullEncrypted) {
+    // The real owner knows their own document's full number — a far
+    // stronger proof than the old "last 2 characters" question. Deliberately
+    // no `expectedHint` here: `verifications.questions` is plaintext at
+    // rest, and baking the decrypted number into it would undo the point of
+    // encrypting idFullEncrypted in the first place. The actual comparison
+    // happens in api/matches/[id]/verify, decrypting fresh from
+    // idFullEncrypted at scoring time instead.
+    questions.push({
+      id: "serial_end",
+      question: "Quel est le numéro complet du document ou de l'identifiant ?",
+      type: "text",
+      expectedHint: undefined,
+    });
+  } else if (lost.serialPartial || lost.idPartialMasked) {
     questions.push({
       id: "serial_end",
       question:

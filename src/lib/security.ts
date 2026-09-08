@@ -618,3 +618,28 @@ export function decryptPrivatePayload(
     return null;
   }
 }
+
+/** Encrypts a full document/ID number for `lostItems.idFullEncrypted` / `foundItems.idFullEncrypted`. */
+export function encryptIdNumber(idFull: string): string {
+  return encryptPrivatePayload({ idFull });
+}
+
+/** Decrypts a stored full ID number — server-side use only (matching engine), never returned to a client. */
+export function decryptIdNumber(encrypted: string | null | undefined): string | null {
+  const payload = decryptPrivatePayload(encrypted);
+  const value = payload?.idFull;
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+/**
+ * Derives the publicly-visible masked form from a full number the user
+ * typed once — replaces the old design where the user had to type the mask
+ * themselves (e.g. "BF****84"), which was error-prone and inconsistent.
+ * Keeps the first and last 2 characters; a short value (<=4 chars) is
+ * masked entirely rather than revealing everything.
+ */
+export function maskIdNumber(idFull: string): string {
+  const clean = idFull.trim();
+  if (clean.length <= 4) return "*".repeat(clean.length);
+  return `${clean.slice(0, 2)}****${clean.slice(-2)}`;
+}

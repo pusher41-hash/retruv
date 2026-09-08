@@ -122,7 +122,9 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
       color: fieldConfig.showColor ? fd.get("color") || null : null,
       distinctiveFeatures: fd.get("distinctiveFeatures") || null,
       serialPartial: fieldConfig.showSerial ? fd.get("serialPartial") || null : null,
-      idPartialMasked: fieldConfig.showIdPartial ? fd.get("idPartialMasked") || null : null,
+      // Sent once, in full — the server encrypts it and derives the public
+      // masked display value; never displayed anywhere after this.
+      idFull: fieldConfig.showIdPartial ? fd.get("idFull") || null : null,
       details: Object.keys(details).length ? details : undefined,
       city: fd.get("city"),
       district: fd.get("district") || null,
@@ -149,11 +151,6 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
       payload.recoveryPointId = fieldConfig.showRecoveryPoint
         ? fd.get("recoveryPointId") || null
         : null;
-      if (fieldConfig.showIdPartial && fd.get("privateLastDigits")) {
-        payload.privateData = {
-          lastDigits: fd.get("privateLastDigits"),
-        };
-      }
     }
 
     const res = await fetch(mode === "lost" ? "/api/lost" : "/api/found", {
@@ -370,7 +367,8 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
             <Field label={fieldConfig.idPartialLabel} hint={fieldConfig.idPartialHint}>
               <input
                 className="input"
-                name="idPartialMasked"
+                name="idFull"
+                autoComplete="off"
                 placeholder={fieldConfig.idPartialPlaceholder}
               />
             </Field>
@@ -463,19 +461,6 @@ export function DeclareForm({ mode }: { mode: "lost" | "found" }) {
                   </option>
                 ))}
               </select>
-            </Field>
-          ) : null}
-          {fieldConfig.showIdPartial ? (
-            <Field
-              label="2 derniers caractères de l'identifiant (privé)"
-              hint="Stocké de façon sécurisée pour le matching, jamais affiché."
-            >
-              <input
-                className="input"
-                name="privateLastDigits"
-                maxLength={4}
-                placeholder="84"
-              />
             </Field>
           ) : null}
         </>

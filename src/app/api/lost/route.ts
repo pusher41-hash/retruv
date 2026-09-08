@@ -6,7 +6,13 @@ import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
 import { countryCurrency } from "@/lib/constants";
 import { runMatchingForLostItem } from "@/lib/matching";
-import { logAudit, processSensitivePhotos, sanitizePublicDescription } from "@/lib/security";
+import {
+  encryptIdNumber,
+  logAudit,
+  maskIdNumber,
+  processSensitivePhotos,
+  sanitizePublicDescription,
+} from "@/lib/security";
 import { sanitizeDetails } from "@/lib/category-fields";
 import {
   buildDeclarationKeywords,
@@ -29,7 +35,11 @@ const createSchema = z.object({
   color: z.string().max(50).optional().nullable(),
   distinctiveFeatures: z.string().max(1000).optional().nullable(),
   serialPartial: z.string().max(50).optional().nullable(),
-  idPartialMasked: z.string().max(50).optional().nullable(),
+  // The complete document/ID number — masked form (idPartialMasked) and
+  // encrypted storage (idFullEncrypted) are both derived from this
+  // server-side (see maskIdNumber/encryptIdNumber below), never typed by
+  // the user directly anymore.
+  idFull: z.string().max(100).optional().nullable(),
   details: z.record(z.string(), z.union([z.string(), z.number()])).optional().nullable(),
   lostDate: z.string().optional().nullable(),
   lostTimeApprox: z.string().max(50).optional().nullable(),
@@ -97,6 +107,7 @@ export async function GET(req: Request) {
       blurredPhotoUrls: undefined,
       privateNotes: undefined,
       verificationHints: undefined,
+      idFullEncrypted: undefined,
       category: r.category,
       owner: {
         name: r.userName.split(" ")[0],
@@ -177,7 +188,8 @@ export async function POST(req: Request) {
         color: data.color || null,
         distinctiveFeatures: data.distinctiveFeatures || null,
         serialPartial: data.serialPartial || null,
-        idPartialMasked: data.idPartialMasked || null,
+        idPartialMasked: data.idFull ? maskIdNumber(data.idFull) : null,
+        idFullEncrypted: data.idFull ? encryptIdNumber(data.idFull) : null,
         details: sanitizedDetails,
         keywords,
         lostDate: data.lostDate ? new Date(data.lostDate) : null,
@@ -204,6 +216,9 @@ export async function POST(req: Request) {
           : [],
       })
       .returning();
+    // Never echoed back, not even the ciphertext, to the declarer's own
+    // confirmation response.
+    const responseItem = { ...item, idFullEncrypted: undefined };
 
     if (pendingUploads.length) {
       await db
@@ -228,13 +243,13 @@ export async function POST(req: Request) {
     // until a human approves it — see src/lib/moderation.ts.
     if (item.moderationStatus === "pending_review") {
       await notifyModeratorsOfPendingReview("lost", item);
-      return jsonOk({ item, matchesFound: 0, pendingModeration: true }, 201);
+      return jsonOk({ item: responseItem, matchesFound: 0, pendingModeration: true }, 201);
     }
 
     // Async-style matching (await in request for MVP reliability)
     const matchResults = await runMatchingForLostItem(item.id);
 
-    return jsonOk({ item, matchesFound: matchResults.length }, 201);
+    return jsonOk({ item: responseItem, matchesFound: matchResults.length }, 201);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return jsonError(err.issues[0]?.message ?? "Données invalides");

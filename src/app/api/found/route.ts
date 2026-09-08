@@ -6,8 +6,10 @@ import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
 import { runMatchingForFoundItem } from "@/lib/matching";
 import {
+  encryptIdNumber,
   encryptPrivatePayload,
   logAudit,
+  maskIdNumber,
   processSensitivePhotos,
   sanitizePublicDescription,
 } from "@/lib/security";
@@ -33,7 +35,10 @@ const createSchema = z.object({
   color: z.string().max(50).optional().nullable(),
   distinctiveFeatures: z.string().max(1000).optional().nullable(),
   serialPartial: z.string().max(50).optional().nullable(),
-  idPartialMasked: z.string().max(50).optional().nullable(),
+  // The complete document/ID number the finder can read off the item —
+  // masked form and encrypted storage are both derived from this
+  // server-side (see maskIdNumber/encryptIdNumber), never typed directly.
+  idFull: z.string().max(100).optional().nullable(),
   details: z.record(z.string(), z.union([z.string(), z.number()])).optional().nullable(),
   foundDate: z.string().optional().nullable(),
   foundTimeApprox: z.string().max(50).optional().nullable(),
@@ -204,7 +209,8 @@ export async function POST(req: Request) {
         color: data.color || null,
         distinctiveFeatures: data.distinctiveFeatures || null,
         serialPartial: data.serialPartial || null,
-        idPartialMasked: data.idPartialMasked || null,
+        idPartialMasked: data.idFull ? maskIdNumber(data.idFull) : null,
+        idFullEncrypted: data.idFull ? encryptIdNumber(data.idFull) : null,
         details: sanitizedDetails,
         keywords,
         foundDate: data.foundDate ? new Date(data.foundDate) : null,
@@ -248,17 +254,19 @@ export async function POST(req: Request) {
       entityId: item.id,
     });
 
+    const responseItem = { ...item, privateDataEncrypted: undefined, idFullEncrypted: undefined };
+
     if (item.moderationStatus === "pending_review") {
       await notifyModeratorsOfPendingReview("found", item);
       return jsonOk(
-        { item: { ...item, privateDataEncrypted: undefined }, matchesFound: 0, pendingModeration: true },
+        { item: responseItem, matchesFound: 0, pendingModeration: true },
         201
       );
     }
 
     const matchResults = await runMatchingForFoundItem(item.id);
 
-    return jsonOk({ item: { ...item, privateDataEncrypted: undefined }, matchesFound: matchResults.length }, 201);
+    return jsonOk({ item: responseItem, matchesFound: matchResults.length }, 201);
   } catch (err) {
     if (err instanceof z.ZodError) {
       return jsonError(err.issues[0]?.message ?? "Données invalides");

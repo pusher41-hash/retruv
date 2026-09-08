@@ -184,7 +184,17 @@ export const lostItems = pgTable(
     color: text("color"),
     distinctiveFeatures: text("distinctive_features"),
     serialPartial: text("serial_partial"),
+    // Auto-derived from idFullEncrypted at write time (see maskIdNumber in
+    // lib/security.ts) — never typed by the user directly anymore, which
+    // used to be error-prone and inconsistent. Safe to show publicly.
     idPartialMasked: text("id_partial_masked"),
+    // The real, complete document/ID number, AES-256-GCM encrypted (see
+    // encryptPrivatePayload) — never stored or returned in plaintext
+    // anywhere. Decrypted only ephemerally, server-side, by the matching
+    // engine to compare two declarations' numbers for an exact-match
+    // signal far stronger than comparing two masked strings. No UI or API
+    // response ever surfaces this column's value, encrypted or not.
+    idFullEncrypted: text("id_full_encrypted"),
     // Category-specific structured attributes (age/height for a missing
     // person, breed/chip number for an animal, etc.) — see
     // src/lib/category-fields.ts. Keys are allowlisted server-side per
@@ -247,6 +257,7 @@ export const foundItems = pgTable(
     distinctiveFeatures: text("distinctive_features"),
     serialPartial: text("serial_partial"),
     idPartialMasked: text("id_partial_masked"),
+    idFullEncrypted: text("id_full_encrypted"),
     details: jsonb("details").$type<Record<string, string>>(),
     keywords: text("keywords").array(),
     foundDate: timestamp("found_date"),

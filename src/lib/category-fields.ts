@@ -101,9 +101,9 @@ const DEFAULT_CONFIG: CategoryFieldConfig = {
   serialLabel: "N° série partiel",
   serialHint: "Masqué — seuls les derniers caractères, jamais le numéro complet.",
   serialPlaceholder: "****7291",
-  idPartialLabel: "Identifiant partiel",
-  idPartialHint: "Quelques caractères seulement, jamais le numéro complet.",
-  idPartialPlaceholder: "IT****84",
+  idPartialLabel: "Numéro du document (complet)",
+  idPartialHint: "Chiffré automatiquement — jamais affiché en clair, ni publiquement ni à un modérateur. Seule une version masquée (ex : IT****84) sera visible sur la fiche.",
+  idPartialPlaceholder: "Ex : IT1234584",
   cityLabel: "Ville",
   eventDateLabelLost: "Date de perte",
   eventDateLabelFound: "Date de trouvaille",
@@ -189,54 +189,57 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
     distinctiveHint:
       "Ce détail sert uniquement à vérifier le vrai propriétaire — ne le mettez jamais dans la description publique.",
     distinctivePlaceholder: "Ex : étui bleu, page légèrement pliée, autocollant à l'intérieur",
-    idPartialLabel: "Numéro du document (partiel)",
-    idPartialPlaceholder: "Ex : IT****84",
+    idPartialLabel: "Numéro du document (complet)",
+    idPartialPlaceholder: "Ex : IT1234584",
   },
   cni: {
     titlePlaceholderLost: "Ex : Carte d'identité perdue à Turin",
     titlePlaceholderFound: "Ex : Carte d'identité retrouvée à Naples",
-    idPartialLabel: "Numéro de CNI (partiel)",
-    idPartialPlaceholder: "Ex : CI****12",
+    idPartialLabel: "Numéro de CNI (complet)",
+    idPartialPlaceholder: "Ex : CI1234512",
   },
   passeport: {
     titlePlaceholderLost: "Ex : Passeport perdu à Rome",
     titlePlaceholderFound: "Ex : Passeport retrouvé au marché de Milan",
-    idPartialLabel: "Numéro de passeport (partiel)",
-    idPartialPlaceholder: "Ex : IT****84",
+    idPartialLabel: "Numéro de passeport (complet)",
+    idPartialPlaceholder: "Ex : IT1234584",
   },
   permis: {
     titlePlaceholderLost: "Ex : Permis de conduire perdu",
-    idPartialLabel: "Numéro de permis (partiel)",
-    idPartialPlaceholder: "Ex : PC****56",
+    idPartialLabel: "Numéro de permis (complet)",
+    idPartialPlaceholder: "Ex : PC1234556",
   },
   "carte-etudiant": {
     titlePlaceholderLost: "Ex : Carte d'étudiant perdue sur le campus",
-    idPartialLabel: "Numéro d'étudiant (partiel)",
+    idPartialLabel: "Numéro d'étudiant (complet)",
     distinctivePlaceholder: "Ex : photo, autocollant, coin écorné",
   },
   "carte-pro": {
     titlePlaceholderLost: "Ex : Carte professionnelle perdue",
-    idPartialLabel: "Numéro de badge (partiel)",
+    idPartialLabel: "Numéro de badge (complet)",
     distinctivePlaceholder: "Ex : logo, dragonne, autocollant au dos",
   },
   "carte-electeur": {
     titlePlaceholderLost: "Ex : Carte d'électeur perdue",
-    idPartialLabel: "Numéro d'électeur (partiel)",
+    idPartialLabel: "Numéro d'électeur (complet)",
     distinctivePlaceholder: "Ex : coin écorné, tampon visible",
   },
   "carte-bancaire": {
+    // Deliberately NOT routed through the full-number/encryption path used
+    // by the other document types: a bank card's full number carries PCI-DSS
+    // handling obligations RETRUV isn't set up to meet, and it isn't useful
+    // for matching anyway. Collect no identifier at all for this one.
+    showIdPartial: false,
     titlePlaceholderLost: "Ex : Carte bancaire perdue",
-    idPartialLabel: "4 derniers chiffres uniquement",
-    idPartialPlaceholder: "Ex : ****4321",
     distinctivePlaceholder: "Ex : carte rayée, autocollant personnalisé",
   },
   diplome: {
     titlePlaceholderLost: "Ex : Diplôme perdu lors d'un déménagement",
-    idPartialLabel: "Numéro / référence (partiel)",
+    idPartialLabel: "Numéro / référence (complet)",
   },
   "doc-admin": {
     titlePlaceholderLost: "Ex : Document administratif perdu",
-    idPartialLabel: "Numéro de référence (partiel)",
+    idPartialLabel: "Numéro de référence (complet)",
   },
 
   // ── Objets personnels ──────────────────────────────────────────────────
@@ -395,9 +398,9 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
     showIdPartial: true,
     titlePlaceholderLost: "Ex : Plaque d'immatriculation perdue",
     titlePlaceholderFound: "Ex : Plaque retrouvée près de la gare",
-    idPartialLabel: "Numéro d'immatriculation (partiel)",
-    idPartialHint: "Quelques caractères seulement, jamais la plaque complète.",
-    idPartialPlaceholder: "Ex : AB***123",
+    idPartialLabel: "Numéro d'immatriculation (complet)",
+    idPartialHint: "Chiffré automatiquement — seule une version masquée sera visible publiquement.",
+    idPartialPlaceholder: "Ex : AB123CD",
     distinctivePlaceholder: "Ex : plaque tordue, autocollant partiellement arraché",
   },
   "doc-vehicule": {
@@ -407,8 +410,8 @@ const CONFIG_BY_SLUG: Record<string, Partial<CategoryFieldConfig>> = {
     showSerial: false,
     showIdPartial: true,
     titlePlaceholderLost: "Ex : Carte grise perdue",
-    idPartialLabel: "Numéro du document (partiel)",
-    idPartialPlaceholder: "Ex : IT****84",
+    idPartialLabel: "Numéro du document (complet)",
+    idPartialPlaceholder: "Ex : IT1234584",
   },
   casque: {
     showModel: false,

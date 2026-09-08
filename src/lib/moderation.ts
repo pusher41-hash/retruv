@@ -114,7 +114,19 @@ export async function listPendingModeration() {
       .where(eq(foundItems.moderationStatus, "pending_review"))
       .orderBy(asc(foundItems.createdAt)),
   ]);
-  return { pendingLost, pendingFound };
+  // Strip the encrypted ID payload before this reaches the admin
+  // moderation page's API response — even ciphertext has no reason to
+  // leave the server; nothing in the moderation UI needs it.
+  return {
+    pendingLost: pendingLost.map((r) => ({
+      ...r,
+      item: { ...r.item, idFullEncrypted: undefined },
+    })),
+    pendingFound: pendingFound.map((r) => ({
+      ...r,
+      item: { ...r.item, idFullEncrypted: undefined },
+    })),
+  };
 }
 
 /**
