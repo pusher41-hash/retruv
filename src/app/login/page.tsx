@@ -81,7 +81,7 @@ export default function LoginPage() {
           <div className="card mt-4 p-4 text-sm text-slate-600">
             <p className="font-bold text-slate-800">Comptes démo</p>
             <ul className="mt-2 space-y-1 text-xs">
-              <li>Admin : +22670000000 / retruv2026</li>
+              <li>Admin : +22670000000 / Retruv-Admin-2026!</li>
               <li>Aïcha (passeport perdu) : +22670111111 / retruv2026</li>
               <li>Moussa (trouveur) : +22670222222 / retruv2026</li>
             </ul>
