@@ -9,7 +9,8 @@ import { createNotification, logAudit } from "@/lib/security";
 type Params = { params: Promise<{ id: string }> };
 
 const patchSchema = z.object({
-  action: z.literal("withdraw"),
+  action: z.enum(["withdraw", "hide", "show"]),
+  reason: z.string().max(500).optional(),
 });
 
 /**
@@ -33,7 +34,31 @@ export async function PATCH(req: Request, { params }: Params) {
       return jsonError("Accès refusé", 403);
     }
 
-    const { action } = patchSchema.parse(await req.json());
+    const { action, reason } = patchSchema.parse(await req.json());
+
+    if (action === "hide" || action === "show") {
+      if (!isStaff) return jsonError("Accès refusé", 403);
+      const [updated] = await db
+        .update(foundItems)
+        .set({
+          moderationStatus: action === "hide" ? "rejected" : "approved",
+          moderatedBy: user.id,
+          moderatedAt: new Date(),
+          moderationNotes: action === "hide" ? reason || "Masqué par un administrateur" : null,
+        })
+        .where(eq(foundItems.id, id))
+        .returning();
+
+      await logAudit({
+        userId: user.id,
+        action: `found_item.${action}`,
+        entityType: "found_item",
+        entityId: id,
+        metadata: reason ? { reason } : undefined,
+      });
+
+      return jsonOk({ item: updated });
+    }
 
     if (action === "withdraw") {
       if (item.status === "recovered") {

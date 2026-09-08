@@ -15,6 +15,7 @@ import { sanitizePublicDescription } from "@/lib/security";
 import { CategoryIcon } from "@/lib/category-icons";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
 import { WithdrawButton } from "@/components/withdraw-button";
+import { AdminVisibilityToggle } from "@/components/admin-visibility-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -89,6 +90,16 @@ export default async function LostDetailPage({
         description={`Déclaré ${formatRelative(row.item.createdAt)} · ${row.item.city}`}
         action={<StatusBadge status={row.item.status} />}
       />
+
+      {isStaff ? (
+        <div className="mb-4 card p-4">
+          <AdminVisibilityToggle
+            kind="lost"
+            id={row.item.id}
+            currentlyHidden={row.item.moderationStatus === "rejected"}
+          />
+        </div>
+      ) : null}
 
       {row.item.moderationStatus === "pending_review" ? (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">

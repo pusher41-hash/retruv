@@ -9,7 +9,8 @@ import { createNotification, logAudit } from "@/lib/security";
 type Params = { params: Promise<{ id: string }> };
 
 const patchSchema = z.object({
-  action: z.literal("withdraw"),
+  action: z.enum(["withdraw", "hide", "show"]),
+  reason: z.string().max(500).optional(),
 });
 
 /**
@@ -36,7 +37,36 @@ export async function PATCH(req: Request, { params }: Params) {
       return jsonError("Accès refusé", 403);
     }
 
-    const { action } = patchSchema.parse(await req.json());
+    const { action, reason } = patchSchema.parse(await req.json());
+
+    if (action === "hide" || action === "show") {
+      // Distinct from approve/reject in moderation.ts: those only ever act
+      // on a "pending_review" item (its precondition), so there was
+      // previously no way for staff to hide something already visible
+      // (the common case — most categories auto-approve) short of editing
+      // the DB directly. This is a general admin override, from any state.
+      if (!isStaff) return jsonError("Accès refusé", 403);
+      const [updated] = await db
+        .update(lostItems)
+        .set({
+          moderationStatus: action === "hide" ? "rejected" : "approved",
+          moderatedBy: user.id,
+          moderatedAt: new Date(),
+          moderationNotes: action === "hide" ? reason || "Masqué par un administrateur" : null,
+        })
+        .where(eq(lostItems.id, id))
+        .returning();
+
+      await logAudit({
+        userId: user.id,
+        action: `lost_item.${action}`,
+        entityType: "lost_item",
+        entityId: id,
+        metadata: reason ? { reason } : undefined,
+      });
+
+      return jsonOk({ item: updated });
+    }
 
     if (action === "withdraw") {
       if (item.status === "recovered") {
