@@ -291,6 +291,15 @@ export function computeMatchScore(
   // Category mismatch hard penalty
   if (breakdown.category < 1) score *= 0.35;
 
+  // Subcategory mismatch penalty: previously a mismatch only cost 8.5 of the
+  // ~110 total weighted points (0.15 vs 1, weight 10) — a same-city,
+  // similarly-worded declaration in a different subcategory of the same
+  // category (e.g. Transport→Moto vs Transport→Voiture) could still reach
+  // "probable" purely on the other signals. Only applies to a confirmed
+  // mismatch (both sides had a subcategory and they differ) — not to the
+  // neutral 0.4 case where one or both sides left it unset.
+  if (breakdown.subcategory === 0.15) score *= 0.6;
+
   score = Math.round(Math.max(0, Math.min(100, score)) * 10) / 10;
 
   return {
@@ -395,8 +404,7 @@ export async function runMatchingForLostItem(lostItemId: string) {
     return [];
 
   const candidates = await fetchFoundCandidates(lost);
-
-  return persistMatches(lost, candidates, "lost");
+  return persistMatches(lost, candidates);
 }
 
 export async function runMatchingForFoundItem(foundItemId: string) {
@@ -410,133 +418,106 @@ export async function runMatchingForFoundItem(foundItemId: string) {
     return [];
 
   const candidates = await fetchLostCandidates(found);
-
-  const created = [];
-  for (const lost of candidates) {
-    const result = computeMatchScore(lost, found);
-    if (result.score < MATCH_THRESHOLD) continue;
-
-    const existing = await db
-      .select()
-      .from(matches)
-      .where(
-        and(
-          eq(matches.lostItemId, lost.id),
-          eq(matches.foundItemId, found.id)
-        )
-      )
-      .limit(1);
-
-    if (existing[0]) {
-      await db
-        .update(matches)
-        .set({
-          score: result.score,
-          level: result.level,
-          scoreBreakdown: result.breakdown,
-          updatedAt: new Date(),
-        })
-        .where(eq(matches.id, existing[0].id));
-      created.push({ ...existing[0], score: result.score, level: result.level });
-      continue;
-    }
-
-    const [row] = await db
-      .insert(matches)
-      .values({
-        lostItemId: lost.id,
-        foundItemId: found.id,
-        score: result.score,
-        level: result.level,
-        scoreBreakdown: result.breakdown,
-        status: "notified",
-        lostOwnerNotified: true,
-        finderNotified: true,
-      })
-      .returning();
-
-    await notifyMatch(row.id, lost.userId, found.userId, result.score, result.level);
-
-    // Update item statuses if high confidence
-    if (result.score >= 70) {
-      await db
-        .update(lostItems)
-        .set({ status: "matched", updatedAt: new Date() })
-        .where(eq(lostItems.id, lost.id));
-      await db
-        .update(foundItems)
-        .set({ status: "matched", updatedAt: new Date() })
-        .where(eq(foundItems.id, found.id));
-    }
-
-    created.push(row);
-  }
-  return created;
+  return persistMatches(candidates, found);
 }
 
-async function persistMatches(
-  lost: LostItem,
-  candidates: FoundItem[],
-  _source: "lost" | "found"
-) {
-  const created = [];
-  for (const found of candidates) {
-    const result = computeMatchScore(lost, found);
-    if (result.score < MATCH_THRESHOLD) continue;
+/**
+ * Persists (or refreshes) a match for one lost/found pair — insert/update,
+ * notify, and bump both items to "matched" past the confidence threshold.
+ * Shared by both matching directions (previously duplicated near-verbatim
+ * between runMatchingForFoundItem and this function, a real risk already
+ * demonstrated in this project: a fix applied to one copy and not the
+ * other).
+ */
+async function persistOneMatch(lost: LostItem, found: FoundItem) {
+  const result = computeMatchScore(lost, found);
+  if (result.score < MATCH_THRESHOLD) return null;
 
-    const existing = await db
-      .select()
-      .from(matches)
-      .where(
-        and(
-          eq(matches.lostItemId, lost.id),
-          eq(matches.foundItemId, found.id)
-        )
-      )
-      .limit(1);
+  const existing = await db
+    .select()
+    .from(matches)
+    .where(
+      and(eq(matches.lostItemId, lost.id), eq(matches.foundItemId, found.id))
+    )
+    .limit(1);
 
-    if (existing[0]) {
-      await db
-        .update(matches)
-        .set({
-          score: result.score,
-          level: result.level,
-          scoreBreakdown: result.breakdown,
-          updatedAt: new Date(),
-        })
-        .where(eq(matches.id, existing[0].id));
-      created.push({ ...existing[0], score: result.score, level: result.level });
-      continue;
-    }
-
-    const [row] = await db
-      .insert(matches)
-      .values({
-        lostItemId: lost.id,
-        foundItemId: found.id,
+  if (existing[0]) {
+    await db
+      .update(matches)
+      .set({
         score: result.score,
         level: result.level,
         scoreBreakdown: result.breakdown,
-        status: "notified",
-        lostOwnerNotified: true,
-        finderNotified: true,
+        updatedAt: new Date(),
       })
-      .returning();
+      .where(eq(matches.id, existing[0].id));
+    return { ...existing[0], score: result.score, level: result.level };
+  }
 
-    await notifyMatch(row.id, lost.userId, found.userId, result.score, result.level);
+  const [row] = await db
+    .insert(matches)
+    .values({
+      lostItemId: lost.id,
+      foundItemId: found.id,
+      score: result.score,
+      level: result.level,
+      scoreBreakdown: result.breakdown,
+      status: "notified",
+      lostOwnerNotified: true,
+      finderNotified: true,
+    })
+    .returning();
 
-    if (result.score >= 70) {
-      await db
-        .update(lostItems)
-        .set({ status: "matched", updatedAt: new Date() })
-        .where(eq(lostItems.id, lost.id));
-      await db
-        .update(foundItems)
-        .set({ status: "matched", updatedAt: new Date() })
-        .where(eq(foundItems.id, found.id));
+  await notifyMatch(row.id, lost.userId, found.userId, result.score, result.level);
+
+  if (result.score >= 70) {
+    await db
+      .update(lostItems)
+      .set({ status: "matched", updatedAt: new Date() })
+      .where(eq(lostItems.id, lost.id));
+    await db
+      .update(foundItems)
+      .set({ status: "matched", updatedAt: new Date() })
+      .where(eq(foundItems.id, found.id));
+  }
+
+  return row;
+}
+
+/**
+ * Runs persistOneMatch for every candidate on the other side of `lost`/
+ * `found` (exactly one of which is an array). Each candidate is isolated in
+ * its own try/catch: previously, one candidate throwing (a transient DB
+ * error, an unexpected null) aborted the whole `for` loop via the unhandled
+ * rejection propagating up — silently skipping every remaining candidate in
+ * the same batch, not just the failing one. A real match further down the
+ * list could be dropped with no trace.
+ */
+async function persistMatches(
+  lostOrCandidates: LostItem | LostItem[],
+  foundOrCandidates: FoundItem | FoundItem[]
+) {
+  const created = [];
+  if (Array.isArray(lostOrCandidates)) {
+    const found = foundOrCandidates as FoundItem;
+    for (const lost of lostOrCandidates) {
+      try {
+        const row = await persistOneMatch(lost, found);
+        if (row) created.push(row);
+      } catch (err) {
+        console.error(`Matching failed for lostItem ${lost.id} × foundItem ${found.id}:`, err);
+      }
     }
-
-    created.push(row);
+  } else {
+    const lost = lostOrCandidates;
+    for (const found of foundOrCandidates as FoundItem[]) {
+      try {
+        const row = await persistOneMatch(lost, found);
+        if (row) created.push(row);
+      } catch (err) {
+        console.error(`Matching failed for lostItem ${lost.id} × foundItem ${found.id}:`, err);
+      }
+    }
   }
   return created;
 }

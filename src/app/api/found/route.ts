@@ -15,7 +15,7 @@ import {
   processSensitivePhotos,
   sanitizePublicDescription,
 } from "@/lib/security";
-import { getCategoryFieldConfig, sanitizeDetails } from "@/lib/category-fields";
+import { getCategoryFieldConfig, isPersonCategory, sanitizeDetails } from "@/lib/category-fields";
 import {
   notifyModeratorsOfPendingReview,
   PUBLICLY_VISIBLE_MODERATION_STATUSES,
@@ -160,7 +160,14 @@ export async function POST(req: Request) {
         .from(categories)
         .where(eq(categories.id, data.subcategoryId))
         .limit(1);
-      subSlug = sub?.slug ?? "";
+      // A subcategory not actually belonging to the submitted category would
+      // let its own config (e.g. requiresModeration) be silently skipped —
+      // this is the only thing standing between "Enfant disparu" and a
+      // categoryId of "Objets personnels" bypassing mandatory moderation.
+      if (!sub || sub.parentId !== cat.id) {
+        return jsonError("Sous-catégorie invalide pour cette catégorie");
+      }
+      subSlug = sub.slug;
     }
 
     const sensitive =
@@ -169,6 +176,10 @@ export async function POST(req: Request) {
       isSensitiveCategory(subSlug);
     const fieldConfig = getCategoryFieldConfig(cat.slug, subSlug);
     const sanitizedDetails = sanitizeDetails(data.details, cat.slug, subSlug);
+    // Defense in depth: missing-person content is always moderated,
+    // regardless of what fieldConfig resolved to.
+    const requiresModeration =
+      fieldConfig.requiresModeration || isPersonCategory(cat.slug, subSlug);
 
     if (data.recoveryPointId) {
       const [rp] = await db
@@ -252,9 +263,7 @@ export async function POST(req: Request) {
           ? encryptPrivatePayload(data.privateData)
           : null,
         isSensitive: sensitive,
-        moderationStatus: fieldConfig.requiresModeration
-          ? "pending_review"
-          : "auto_approved",
+        moderationStatus: requiresModeration ? "pending_review" : "auto_approved",
         status: "active",
         expiresAt,
         country: data.country || user.country || "IT",

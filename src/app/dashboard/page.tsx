@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   foundItems,
@@ -40,18 +40,20 @@ export default async function DashboardPage() {
     .orderBy(desc(foundItems.createdAt))
     .limit(10);
 
-  const myLostIds = myLost.map((i) => i.id);
-  const myFoundIds = myFound.map((i) => i.id);
-
-  const allMatches = await db
-    .select()
+  // Scoped at the DB level (not "load the 100 most recent matches
+  // site-wide, then filter in JS") — the previous version silently hid a
+  // real match from a user's dashboard as soon as the platform had more
+  // than ~100 matches in total, since their match could fall outside that
+  // global window. See matches/page.tsx for the same, correct pattern.
+  const myMatchRows = await db
+    .select({ match: matches })
     .from(matches)
+    .innerJoin(lostItems, eq(matches.lostItemId, lostItems.id))
+    .innerJoin(foundItems, eq(matches.foundItemId, foundItems.id))
+    .where(or(eq(lostItems.userId, user.id), eq(foundItems.userId, user.id)))
     .orderBy(desc(matches.createdAt))
-    .limit(100);
-
-  const myMatches = allMatches.filter(
-    (m) => myLostIds.includes(m.lostItemId) || myFoundIds.includes(m.foundItemId)
-  );
+    .limit(50);
+  const myMatches = myMatchRows.map((r) => r.match);
 
   const notifs = await db
     .select()

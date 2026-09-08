@@ -10,6 +10,7 @@ import {
   lostItems,
   notifications,
   ratings,
+  reports,
   uploads,
   userBlocks,
   users,
@@ -280,6 +281,53 @@ export async function checkDeclarationRate(userId: string): Promise<{
     };
   }
   return { ok: true, count: total };
+}
+
+/**
+ * Caps how many reports a single user can file per hour, and blocks a
+ * repeat report from the same reporter against the same target within 24h.
+ * Without this, `flagFraud`'s auto-block threshold (5 unresolved
+ * severity>=2 flags, see below) can be triggered single-handedly: nothing
+ * previously stopped one attacker from filing 5 "user" reports against the
+ * same person in a few seconds and getting them auto-blocked.
+ */
+export async function checkReportRate(
+  reporterId: string,
+  targetType: string,
+  targetId: string
+): Promise<{ ok: boolean; reason?: string }> {
+  const sinceHour = new Date(Date.now() - 60 * 60 * 1000);
+  const [hourly] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.reporterId, reporterId), gte(reports.createdAt, sinceHour)));
+  if ((hourly?.count ?? 0) >= 5) {
+    return {
+      ok: false,
+      reason: "Trop de signalements envoyés récemment. Réessayez plus tard.",
+    };
+  }
+
+  const sinceDay = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const [dup] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, reporterId),
+        eq(reports.targetType, targetType),
+        eq(reports.targetId, targetId),
+        gte(reports.createdAt, sinceDay)
+      )
+    );
+  if ((dup?.count ?? 0) > 0) {
+    return {
+      ok: false,
+      reason: "Vous avez déjà signalé cet élément récemment.",
+    };
+  }
+
+  return { ok: true };
 }
 
 export async function checkVerificationRate(userId: string): Promise<{

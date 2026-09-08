@@ -1,4 +1,4 @@
-import { and, eq, lt, ne } from "drizzle-orm";
+import { and, eq, lt, notInArray } from "drizzle-orm";
 import { db } from "@/db";
 import { archivedDeclarations, foundItems, lostItems } from "@/db/schema";
 import { DECLARATION_ARCHIVE_GRACE_DAYS } from "./constants";
@@ -8,15 +8,23 @@ import { logAudit } from "./security";
  * Moves lost/found declarations that expired more than
  * `DECLARATION_ARCHIVE_GRACE_DAYS` ago out of the live tables and into
  * `archivedDeclarations` (full row snapshot), then deletes the live row.
- * `recovered` items are never touched — a successful outcome is kept live
- * indefinitely, matching the retention policy already documented for RETRUV.
+ * `recovered`, `matched`, and `in_recovery` items are never touched — a
+ * successful outcome is kept live indefinitely, and an item with an active
+ * match/conversation/recovery in progress is not "abandoned" just because
+ * its original 90-day window closed while that process was still ongoing
+ * (verification and recovery can easily take longer than that on their own).
  *
  * Deleting the live row cascades (via existing FK `onDelete: cascade`) to
  * any matches/verifications/conversations/messages/recoveries still
- * attached to it. That is intentional: an item past its 90-day expiry plus
- * a 7-day grace period is treated as an abandoned declaration, not an
- * active case.
+ * attached to it. That is intentional for a genuinely abandoned declaration
+ * — which is exactly why the statuses above must never reach this path.
  */
+const ARCHIVE_EXCLUDED_STATUSES: (typeof lostItems.$inferSelect)["status"][] = [
+  "recovered",
+  "matched",
+  "in_recovery",
+];
+
 export async function archiveExpiredDeclarations(): Promise<{
   lostArchived: number;
   foundArchived: number;
@@ -29,7 +37,10 @@ export async function archiveExpiredDeclarations(): Promise<{
     .select()
     .from(lostItems)
     .where(
-      and(lt(lostItems.expiresAt, cutoff), ne(lostItems.status, "recovered"))
+      and(
+        lt(lostItems.expiresAt, cutoff),
+        notInArray(lostItems.status, ARCHIVE_EXCLUDED_STATUSES)
+      )
     );
 
   for (const item of staleLost) {
@@ -47,7 +58,10 @@ export async function archiveExpiredDeclarations(): Promise<{
     .select()
     .from(foundItems)
     .where(
-      and(lt(foundItems.expiresAt, cutoff), ne(foundItems.status, "recovered"))
+      and(
+        lt(foundItems.expiresAt, cutoff),
+        notInArray(foundItems.status, ARCHIVE_EXCLUDED_STATUSES)
+      )
     );
 
   for (const item of staleFound) {

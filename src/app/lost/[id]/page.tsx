@@ -14,6 +14,7 @@ import { formatMoney, formatDate, formatRelative } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { CategoryIcon } from "@/lib/category-icons";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
+import { WithdrawButton } from "@/components/withdraw-button";
 
 export const dynamic = "force-dynamic";
 
@@ -209,6 +210,11 @@ export default async function LostDetailPage({
                   {formatMoney(row.item.rewardAmount, row.item.rewardCurrency)}
                 </span>
               </p>
+            ) : null}
+            {isOwner && row.item.status !== "withdrawn" && row.item.status !== "recovered" ? (
+              <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                <WithdrawButton kind="lost" id={row.item.id} />
+              </div>
             ) : null}
           </div>
 

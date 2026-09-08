@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { reports } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
-import { flagFraud, logAudit } from "@/lib/security";
+import { checkReportRate, flagFraud, logAudit } from "@/lib/security";
 
 const schema = z.object({
   targetType: z.enum([
@@ -22,6 +22,9 @@ export async function POST(req: Request) {
   try {
     const user = await requireUser();
     const data = schema.parse(await req.json());
+
+    const rate = await checkReportRate(user.id, data.targetType, data.targetId);
+    if (!rate.ok) return jsonError(rate.reason ?? "Limite atteinte", 429);
 
     const [report] = await db
       .insert(reports)

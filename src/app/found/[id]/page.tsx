@@ -13,6 +13,7 @@ import { formatDate, formatRelative } from "@/lib/utils";
 import { sanitizePublicDescription } from "@/lib/security";
 import { CategoryIcon } from "@/lib/category-icons";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
+import { WithdrawButton } from "@/components/withdraw-button";
 
 export const dynamic = "force-dynamic";
 
@@ -196,6 +197,11 @@ export default async function FoundDetailPage({
             <div className="mt-2">
               <ReputationBadge level={row.user.reputationLevel} />
             </div>
+            {isFinder && row.item.status !== "withdrawn" && row.item.status !== "recovered" ? (
+              <div className="mt-4 flex justify-end border-t border-slate-100 pt-4">
+                <WithdrawButton kind="found" id={row.item.id} />
+              </div>
+            ) : null}
           </div>
           <div className="card p-5">
             <p className="font-bold text-slate-900">

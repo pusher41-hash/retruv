@@ -155,7 +155,11 @@ export async function GET(_req: Request, { params }: Params) {
         score: v.score,
         attemptsUsed: v.attemptsUsed,
         maxAttempts: v.maxAttempts,
-        questions: isOwner ? v.questions : v.questions?.map((q) => ({
+        // Never include `expectedHint` here, even for the owner: the owner
+        // IS the claimant these questions test (see verify/route.ts — only
+        // row.lost.userId may submit answers), so leaking the expected
+        // answer to them defeats the entire ownership-verification check.
+        questions: v.questions?.map((q) => ({
           id: q.id,
           question: q.question,
           type: q.type,

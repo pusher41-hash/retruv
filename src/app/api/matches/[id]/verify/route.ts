@@ -186,6 +186,37 @@ export async function POST(req: Request, { params }: Params) {
         metadata: { score, attemptsUsed },
       });
 
+      // Definitively exhausted: without this, `matches.status` stayed stuck
+      // on "verifying" forever (set when the first attempt started, never
+      // moved again) and both items stayed "matched" — permanently excluded
+      // from `fetchFoundCandidates`/`fetchLostCandidates`, which only ever
+      // consider `status = "active"`. A genuine future match for either
+      // item could then never be computed. Reopening both items lets the
+      // real owner (if this claimant was mistaken or fraudulent) still be
+      // found by a later declaration or the next matching run.
+      if (attemptsUsed >= verif.maxAttempts) {
+        await db
+          .update(matches)
+          .set({ status: "rejected", updatedAt: new Date() })
+          .where(eq(matches.id, id));
+        await db
+          .update(lostItems)
+          .set({ status: "active", updatedAt: new Date() })
+          .where(eq(lostItems.id, row.lost.id));
+        await db
+          .update(foundItems)
+          .set({ status: "active", updatedAt: new Date() })
+          .where(eq(foundItems.id, row.found.id));
+
+        await createNotification({
+          userId: row.found.userId,
+          type: "verification_result",
+          title: "Vérification échouée",
+          body: "La vérification de propriété a échoué. L'objet trouvé redevient actif et peut correspondre à d'autres déclarations.",
+          link: `/found/${row.found.id}`,
+        });
+      }
+
       return jsonOk({
         verification: {
           id: verif.id,
