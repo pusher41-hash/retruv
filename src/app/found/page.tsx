@@ -34,7 +34,8 @@ export default async function FoundListPage({
       .leftJoin(subcategories, eq(foundItems.subcategoryId, subcategories.id))
       .where(
         and(
-          city ? eq(foundItems.city, city) : eq(foundItems.status, "active"),
+          eq(foundItems.status, "active"),
+          city ? eq(foundItems.city, city) : undefined,
           inArray(foundItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
         )
       )

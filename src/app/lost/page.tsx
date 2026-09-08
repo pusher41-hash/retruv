@@ -34,7 +34,8 @@ export default async function LostListPage({
       .leftJoin(subcategories, eq(lostItems.subcategoryId, subcategories.id))
       .where(
         and(
-          city ? eq(lostItems.city, city) : eq(lostItems.status, "active"),
+          eq(lostItems.status, "active"),
+          city ? eq(lostItems.city, city) : undefined,
           inArray(lostItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)
         )
       )
