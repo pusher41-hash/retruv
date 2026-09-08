@@ -6,6 +6,7 @@ import { foundItems, fraudFlags, lostItems, reports, users } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { PageHeader, ReputationBadge, StatusBadge } from "@/components/ui";
 import { formatRelative, maskPhone } from "@/lib/utils";
+import { AdminResetPasswordButton } from "@/components/admin-reset-password-button";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,15 @@ export default async function AdminUserDetailPage({
           </div>
         }
       />
+
+      {me.role === "admin" ? (
+        <section className="card mb-4 p-5">
+          <h2 className="font-bold text-retruv-navy">Compte</h2>
+          <div className="mt-3">
+            <AdminResetPasswordButton userId={target.id} />
+          </div>
+        </section>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <section className="card p-5">

@@ -418,6 +418,23 @@ export function generateRestitutionCode(): string {
   return restitutionCodeId();
 }
 
+const TEMP_PASSWORD_ALPHABET =
+  "23456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz";
+const tempPasswordId = customAlphabet(TEMP_PASSWORD_ALPHABET, 12);
+
+/**
+ * Admin-triggered password reset (see api/admin/users/[id]/reset-password) —
+ * there is no SMS/email provider configured in this project (no Twilio/
+ * Resend key in .env.example) for a genuine self-service "forgot password"
+ * flow, so a temporary password an admin can hand to the user through a
+ * trusted channel is the realistic option today. Returned in plaintext
+ * exactly once by the route; never logged, never stored anywhere but the
+ * (immediately bcrypt-hashed) users.password_hash column.
+ */
+export function generateTemporaryPassword(): string {
+  return tempPasswordId();
+}
+
 export type PendingUpload = { id: string; privateFilename: string };
 
 /**
