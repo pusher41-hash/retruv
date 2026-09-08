@@ -10,6 +10,7 @@ import {
   pgEnum,
   index,
   uniqueIndex,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -88,6 +89,20 @@ export const reportStatusEnum = pgEnum("report_status", [
   "dismissed",
 ]);
 
+export const reportTargetTypeEnum = pgEnum("report_target_type", [
+  "user",
+  "lost_item",
+  "found_item",
+  "message",
+  "match",
+]);
+
+export const verificationStatusEnum = pgEnum("verification_status", [
+  "pending",
+  "passed",
+  "failed",
+]);
+
 export const notificationTypeEnum = pgEnum("notification_type", [
   "match_found",
   "verification_request",
@@ -115,7 +130,7 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     fullName: text("full_name").notNull(),
     role: userRoleEnum("role").default("user").notNull(),
-    country: text("country").default("BF").notNull(),
+    country: text("country").default("IT").notNull(),
     city: text("city"),
     avatarUrl: text("avatar_url"),
     reputationScore: integer("reputation_score").default(0).notNull(),
@@ -145,7 +160,7 @@ export const categories = pgTable("categories", {
   nameFr: text("name_fr").notNull(),
   nameEn: text("name_en").notNull(),
   icon: text("icon").notNull(),
-  parentId: uuid("parent_id"),
+  parentId: uuid("parent_id").references((): AnyPgColumn => categories.id),
   isSensitive: boolean("is_sensitive").default(false).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -198,7 +213,7 @@ export const lostItems = pgTable(
     moderatedBy: uuid("moderated_by").references(() => users.id),
     moderatedAt: timestamp("moderated_at"),
     expiresAt: timestamp("expires_at"),
-    country: text("country").default("BF").notNull(),
+    country: text("country").default("IT").notNull(),
     viewCount: integer("view_count").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -247,14 +262,16 @@ export const foundItems = pgTable(
     status: itemStatusEnum("status").default("active").notNull(),
     isSensitive: boolean("is_sensitive").default(false).notNull(),
     privateDataEncrypted: text("private_data_encrypted"),
-    recoveryPointId: uuid("recovery_point_id"),
+    recoveryPointId: uuid("recovery_point_id").references(
+      () => recoveryPoints.id
+    ),
     moderationStatus: moderationStatusEnum("moderation_status")
       .default("auto_approved")
       .notNull(),
     moderationNotes: text("moderation_notes"),
     moderatedBy: uuid("moderated_by").references(() => users.id),
     moderatedAt: timestamp("moderated_at"),
-    country: text("country").default("BF").notNull(),
+    country: text("country").default("IT").notNull(),
     viewCount: integer("view_count").default(0).notNull(),
     expiresAt: timestamp("expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -370,7 +387,7 @@ export const verifications = pgTable(
     score: real("score"),
     maxAttempts: integer("max_attempts").default(3).notNull(),
     attemptsUsed: integer("attempts_used").default(0).notNull(),
-    status: text("status").default("pending").notNull(),
+    status: verificationStatusEnum("status").default("pending").notNull(),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     notes: text("notes"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -432,7 +449,7 @@ export const recoveryPoints = pgTable(
     type: text("type").notNull(),
     address: text("address").notNull(),
     city: text("city").notNull(),
-    country: text("country").default("BF").notNull(),
+    country: text("country").default("IT").notNull(),
     latitude: real("latitude"),
     longitude: real("longitude"),
     phone: text("phone"),
@@ -511,7 +528,7 @@ export const reports = pgTable(
     reporterId: uuid("reporter_id")
       .notNull()
       .references(() => users.id),
-    targetType: text("target_type").notNull(),
+    targetType: reportTargetTypeEnum("target_type").notNull(),
     targetId: uuid("target_id").notNull(),
     reason: text("reason").notNull(),
     details: text("details"),

@@ -328,7 +328,7 @@ export async function checkDeclarationRate(userId: string): Promise<{
  */
 export async function checkReportRate(
   reporterId: string,
-  targetType: string,
+  targetType: (typeof reports.$inferSelect)["targetType"],
   targetId: string
 ): Promise<{ ok: boolean; reason?: string }> {
   const sinceHour = new Date(Date.now() - 60 * 60 * 1000);
