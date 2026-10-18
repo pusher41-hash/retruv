@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { AdminAddPartnerForm } from "@/components/admin-partner-form";
 import { AdminPartnerSeedButton } from "@/components/admin-partner-seed-button";
+import { AdminPartnerCleanButton } from "@/components/admin-partner-clean-button";
 import { PartnerTable } from "./partner-table";
 
 export const dynamic = "force-dynamic";
@@ -98,10 +99,11 @@ export default async function AdminPartnersPage() {
 
       {isAdmin ? (
         <div className="mb-6 mt-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-start">
+          <div className="flex flex-col sm:flex-row gap-3 items-start flex-wrap">
             <AdminAddPartnerForm />
             <div className="hidden sm:block h-10 w-px bg-slate-200 mx-1" />
             <AdminPartnerSeedButton />
+            <AdminPartnerCleanButton />
           </div>
           <p className="text-xs text-slate-500">
             L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. Valeur 0 = premier affiché.
