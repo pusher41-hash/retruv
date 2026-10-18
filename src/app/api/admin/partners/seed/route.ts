@@ -88,7 +88,7 @@ export async function POST() {
       total = inserted;
     }
 
-    return jsonOk({ inserted, skipped, total, message: `🌍 ${inserted} partenaires mondiaux ajoutés, ${skipped} déjà existants, ${total} au total ✨` });
+    return jsonOk({ inserted, skipped, total, message: `${inserted} partenaires ajoutés, ${skipped} déjà existants — ${total} au total` });
   } catch (err) {
     return handleApiError(err);
   }

@@ -11,7 +11,7 @@ export function AdminPartnerSeedButton() {
   const [error, setError] = useState<string | null>(null);
 
   async function seed() {
-    if (!confirm("Peupler la base avec les partenaires officiels mondiaux (police, campus, transport) pour les 35 pays ?\n\nCela va créer environ 108 partenaires. Les doublons seront ignorés.")) {
+    if (!confirm("Peupler la base avec les partenaires officiels mondiaux (police, campus, transport) pour les 36 pays ?\n\nCela va créer 111 partenaires. Les doublons seront ignorés.")) {
       return;
     }
     setLoading(true);
@@ -40,7 +40,7 @@ export function AdminPartnerSeedButton() {
         className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition disabled:opacity-50"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe2 className="h-4 w-4" />}
-        {loading ? "Peuplement en cours..." : "Peupler les 35 pays officiels"}
+        {loading ? "Peuplement en cours..." : "Peupler les 36 pays officiels"}
       </button>
       {result && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 flex items-center gap-2">
@@ -52,7 +52,7 @@ export function AdminPartnerSeedButton() {
           <AlertTriangle className="h-4 w-4" /> {error}
         </div>
       )}
-      <p className="text-xs text-slate-500">Un clic ajoute environ 108 partenaires officiels pour les 35 pays RETRUV.</p>
+      <p className="text-xs text-slate-500">Un clic ajoute 111 partenaires officiels pour les 36 pays RETRUV.</p>
     </div>
   );
 }
