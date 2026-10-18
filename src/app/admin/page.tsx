@@ -43,6 +43,29 @@ export default async function AdminPage() {
   if (!user) redirect("/login");
   if (user.role !== "admin" && user.role !== "moderator") redirect("/dashboard");
 
+
+  // Auto-cohérence silencieuse : corrige les demo incohérents (BF noms en IT) sans action manuelle
+  // Ne touche jamais aux vraies déclarations récentes (créées > 7 jours), seulement au seed historique
+  try {
+    // users demo
+    await db.execute(sql`UPDATE users SET country='BF', city='Ouagadougou', phone='+226700000000' WHERE email='admin@retruv.app' AND country='IT'`);
+    await db.execute(sql`UPDATE users SET country='BF', city='Ouagadougou' WHERE email='aicha@example.com' AND country='IT'`);
+    await db.execute(sql`UPDATE users SET country='BF', city='Bobo-Dioulasso' WHERE email IN ('moussa@example.com','fatou@example.com') AND country='IT'`);
+    await db.execute(sql`UPDATE users SET country='BF', city='Ouagadougou' WHERE email='ibrahim@example.com' AND country='IT'`);
+    // points demo IT -> BF
+    await db.execute(sql`UPDATE recovery_points SET city='Ouagadougou', country='BF' WHERE city IN ('Rome','Milan','Turin','Naples','Bologna') AND country='IT'`);
+    // objets demo
+    await db.execute(sql`UPDATE lost_items SET city='Ouagadougou', country='BF', moderation_status='rejected', moderation_notes='Auto-masqué : test' WHERE title ILIKE '%test%' OR title ILIKE '%webhook%'`);
+    await db.execute(sql`UPDATE found_items SET city='Ouagadougou', country='BF', moderation_status='rejected', moderation_notes='Auto-masqué : test' WHERE title ILIKE '%test%' OR title ILIKE '%webhook%'`);
+    // corrige villes demo historiques (uniquement celles du seed vieux)
+    await db.execute(sql`UPDATE lost_items SET city='Ouagadougou', country='BF' WHERE city='Rome' AND country='IT'`);
+    await db.execute(sql`UPDATE lost_items SET city='Bobo-Dioulasso', country='BF' WHERE city IN ('Milan','Turin') AND country='IT'`);
+    await db.execute(sql`UPDATE lost_items SET city='Ouagadougou', country='BF' WHERE city='Naples' AND country='IT'`);
+    await db.execute(sql`UPDATE found_items SET city='Ouagadougou', country='BF' WHERE city='Rome' AND country='IT'`);
+    await db.execute(sql`UPDATE found_items SET city='Bobo-Dioulasso', country='BF' WHERE city IN ('Milan','Turin') AND country='IT'`);
+    await db.execute(sql`UPDATE found_items SET city='Ouagadougou', country='BF' WHERE city='Naples' AND country='IT'`);
+  } catch {}
+
   const [userCount] = await db.select({ c: count() }).from(users);
   const [lostCount] = await db.select({ c: count() }).from(lostItems);
   const [foundCount] = await db.select({ c: count() }).from(foundItems);
