@@ -153,7 +153,7 @@ export default async function PointsPage({ searchParams }: { searchParams?: Prom
           </Link>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {points.map((p) => (
             <div key={p.id} className="card p-5 border-slate-200 hover:border-slate-300 transition">
               <div className="flex items-start justify-between gap-3">

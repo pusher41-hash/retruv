@@ -147,7 +147,7 @@ export default async function PartnersPage({ searchParams }: { searchParams?: Pr
       ) : null}
 
       {dbPartners ? (
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {dbPartners.map((p) => {
             const Icon = iconMap[p.icon] ?? Building2;
             return (
@@ -182,7 +182,7 @@ export default async function PartnersPage({ searchParams }: { searchParams?: Pr
           })}
         </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FALLBACK_PARTNERS.map((p) => (
             <div key={p.title} className="card p-6">
               <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 border border-slate-200">
