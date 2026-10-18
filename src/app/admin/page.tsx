@@ -139,6 +139,9 @@ export default async function AdminPage() {
         <Link href="/admin/points" className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-600 border border-slate-200 hover:border-retruv-blue">
           Points RETRUV
         </Link>
+        <Link href="/admin/partenaires" className="rounded-full bg-retruv-blue px-4 py-2 text-sm font-semibold text-white border border-retruv-blue hover:bg-retruv-navy">
+          Partenaires
+        </Link>
       </div>
 
       {pendingModerationCount > 0 ? (

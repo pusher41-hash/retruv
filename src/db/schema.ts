@@ -452,6 +452,28 @@ export const messages = pgTable(
   ]
 );
 
+export const partners = pgTable(
+  "partners",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    icon: text("icon").notNull().default("Building2"),
+    website: text("website"),
+    logoUrl: text("logo_url"),
+    city: text("city"),
+    country: text("country").default("IT"),
+    isActive: boolean("is_active").default(true).notNull(),
+    sortOrder: integer("sort_order").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [
+    index("partners_active_idx").on(t.isActive),
+    index("partners_sort_idx").on(t.sortOrder),
+  ]
+);
+
 export const recoveryPoints = pgTable(
   "recovery_points",
   {
@@ -704,6 +726,8 @@ export type LostItem = typeof lostItems.$inferSelect;
 export type FoundItem = typeof foundItems.$inferSelect;
 export type Match = typeof matches.$inferSelect;
 export type Category = typeof categories.$inferSelect;
+export type Partner = typeof partners.$inferSelect;
+export type NewPartner = typeof partners.$inferInsert;
 export type RecoveryPoint = typeof recoveryPoints.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Conversation = typeof conversations.$inferSelect;
