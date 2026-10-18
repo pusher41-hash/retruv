@@ -25,9 +25,18 @@ export default async function AdminPartnersPage() {
     if (msg.includes("does not exist") || msg.includes("relation")) {
       warning = "Table partners manquante — exécutez sql/002-partners.sql sur votre base Neon. Affichage temporairement vide.";
     } else {
-      throw e;
+      console.error("Admin partners load error:", e);
+      warning = `Erreur de chargement: ${(e as Error).message}`;
+      partnerRows = [];
     }
   }
+
+  // Serialize for client component (Date -> string to avoid RSC serialization issue)
+  const serializedPartners = partnerRows.map((p) => ({
+    ...p,
+    createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
+  }));
 
   return (
     <div className="container-app py-8">
@@ -51,7 +60,7 @@ export default async function AdminPartnersPage() {
         </div>
       ) : null}
 
-      <PartnerTable partners={partnerRows} isAdmin={isAdmin} />
+      <PartnerTable partners={serializedPartners} isAdmin={isAdmin} />
     </div>
   );
 }

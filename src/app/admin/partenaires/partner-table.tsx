@@ -33,7 +33,7 @@ type Partner = {
   country: string | null;
   isActive: boolean;
   sortOrder: number;
-  createdAt: Date;
+  createdAt: string | Date;
 };
 
 export function PartnerTable({ partners, isAdmin }: { partners: Partner[]; isAdmin: boolean }) {
