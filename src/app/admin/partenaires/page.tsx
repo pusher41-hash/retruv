@@ -49,6 +49,7 @@ export default async function AdminPartnersPage() {
 
   let partnerRows: typeof partners.$inferSelect[] = [];
   let warning: string | null = null;
+  let isSuccess = false;
   try {
     partnerRows = await db.select().from(partners).orderBy(asc(partners.sortOrder), asc(partners.createdAt));
   } catch (e: unknown) {
@@ -60,19 +61,19 @@ export default async function AdminPartnersPage() {
       try {
         await ensurePartnersTable();
         partnerRows = await db.select().from(partners).orderBy(asc(partners.sortOrder), asc(partners.createdAt));
-        warning = "✅ Table partenaires créée automatiquement avec les 3 partenaires de base.";
+        warning = "🎉 Table partenaires créée automatiquement avec les 3 partenaires de base ! Tu peux maintenant les modifier à ta guise ✨";
+        isSuccess = true;
       } catch (retryErr) {
         console.error("Admin partners auto-create failed:", retryErr);
-        warning = `Impossible de créer la table: ${(retryErr as Error).message}`;
+        warning = `⚠️ Impossible de créer la table: ${(retryErr as Error).message}`;
       }
     } else {
       console.error("Admin partners load error:", e);
-      warning = `Erreur de chargement: ${msg}`;
+      warning = `⚠️ Erreur de chargement: ${msg}`;
       partnerRows = [];
     }
   }
 
-  // Serialize for client component (Date -> string to avoid RSC serialization issue)
   const serializedPartners = partnerRows.map((p) => ({
     ...p,
     createdAt: p.createdAt.toISOString(),
@@ -82,24 +83,38 @@ export default async function AdminPartnersPage() {
   return (
     <div className="container-app py-8">
       <PageHeader
-        back={{ href: "/admin", label: "Dashboard admin" }}
-        eyebrow="Administration"
-        title="Partenaires RETRUV"
-        description={`${partnerRows.length} partenaire(s) configuré(s) pour l'onglet /partenaires. Visible publiquement si actif.`}
+        back={{ href: "/admin", label: "← Dashboard admin" }}
+        eyebrow="✨ Administration moderne"
+        title="🤝 Partenaires RETRUV"
+        description={`✨ ${partnerRows.length} partenaire(s) configuré(s) pour l'onglet /partenaires. Visible publiquement si ✅ Actif. Personnalise tout sans toucher au code ! 🎨`}
       />
 
       {warning ? (
-        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          ⚠️ {warning}
+        <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm flex items-start gap-3 ${isSuccess ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+          <span className="text-lg">{isSuccess ? "🎉" : "⚠️"}</span>
+          <span className="flex-1 font-medium">{warning}</span>
         </div>
       ) : null}
 
+      <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 font-bold text-sky-700">💡 Moderne & emoji-friendly</span>
+        <span className="hidden sm:inline">— Ton design RETRUV, tes icônes, tes emojis ✨</span>
+      </div>
+
       {isAdmin ? (
-        <div className="mb-6">
+        <div className="mb-6 mt-4">
           <AdminAddPartnerForm />
-          <p className="mt-2 text-xs text-slate-500">Astuce : l'ordre d'affichage contrôle l'ordre des cartes sur la page publique. 0 = en premier.</p>
+          <p className="mt-3 text-xs text-slate-500 flex items-start gap-2">
+            <span className="text-base">💡</span>
+            <span><span className="font-bold">Astuce pro ✨ :</span> L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. <span className="bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-black text-amber-700">0 = premier ⭐</span> + badge 🏆 automatique</span>
+          </p>
         </div>
-      ) : null}
+      ) : (
+        <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 flex items-center gap-3">
+          <span className="text-lg">👀</span>
+          <span>Tu es <span className="font-bold">modérateur</span> — tu peux voir la liste, seul un <span className="font-bold">admin</span> peut ajouter/modifier. 🔒</span>
+        </div>
+      )}
 
       <PartnerTable partners={serializedPartners} isAdmin={isAdmin} />
     </div>
