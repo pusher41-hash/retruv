@@ -5,6 +5,7 @@ import { listPendingModeration } from "@/lib/moderation";
 import { getCategoryFieldConfig } from "@/lib/category-fields";
 import { PageHeader } from "@/components/ui";
 import { ModerationActions } from "@/components/moderation-actions";
+import { AdminCleanTestButton } from "@/components/admin-clean-test-button";
 import { formatRelative } from "@/lib/utils";
 import { CategoryIcon } from "@/lib/category-icons";
 import { ShieldCheck } from "lucide-react";
@@ -27,6 +28,10 @@ export default async function ModerationQueuePage() {
         title="File d'attente — Personnes disparues"
         description="Ces déclarations ne sont ni publiques ni mises en correspondance tant qu'elles ne sont pas validées ici."
       />
+
+      <div className="mb-6 flex flex-wrap gap-3">
+        <AdminCleanTestButton />
+      </div>
 
       {total === 0 ? (
         <div className="card flex items-center gap-3 p-6 text-slate-600">

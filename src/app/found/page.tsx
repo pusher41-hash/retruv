@@ -46,7 +46,7 @@ export default async function FoundListPage({
     db
       .select({ city: foundItems.city, count: sql<number>`count(*)::int` })
       .from(foundItems)
-      .where(eq(foundItems.status, "active"))
+      .where(and(eq(foundItems.status, "active"), inArray(foundItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)))
       .groupBy(foundItems.city)
       .orderBy(desc(sql`count(*)`))
       .limit(8),

@@ -46,7 +46,7 @@ export default async function LostListPage({
     db
       .select({ city: lostItems.city, count: sql<number>`count(*)::int` })
       .from(lostItems)
-      .where(eq(lostItems.status, "active"))
+      .where(and(eq(lostItems.status, "active"), inArray(lostItems.moderationStatus, PUBLICLY_VISIBLE_MODERATION_STATUSES)))
       .groupBy(lostItems.city)
       .orderBy(desc(sql`count(*)`))
       .limit(8),
