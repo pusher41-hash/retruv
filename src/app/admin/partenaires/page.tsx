@@ -62,15 +62,15 @@ export default async function AdminPartnersPage() {
       try {
         await ensurePartnersTable();
         partnerRows = await db.select().from(partners).orderBy(asc(partners.sortOrder), asc(partners.createdAt));
-        warning = "🎉 Table partenaires créée automatiquement avec les 3 partenaires de base ! Tu peux maintenant les modifier à ta guise ✨";
+        warning = "Table partenaires créée automatiquement avec les 3 partenaires de base. Vous pouvez maintenant les gérer.";
         isSuccess = true;
       } catch (retryErr) {
         console.error("Admin partners auto-create failed:", retryErr);
-        warning = `⚠️ Impossible de créer la table: ${(retryErr as Error).message}`;
+        warning = `Impossible de créer la table: ${(retryErr as Error).message}`;
       }
     } else {
       console.error("Admin partners load error:", e);
-      warning = `⚠️ Erreur de chargement: ${msg}`;
+      warning = `Erreur de chargement: ${msg}`;
       partnerRows = [];
     }
   }
@@ -84,23 +84,17 @@ export default async function AdminPartnersPage() {
   return (
     <div className="container-app py-8">
       <PageHeader
-        back={{ href: "/admin", label: "← Dashboard admin" }}
-        eyebrow="✨ Administration moderne"
-        title="🤝 Partenaires RETRUV"
-        description={`✨ ${partnerRows.length} partenaire(s) configuré(s) pour l'onglet /partenaires. Visible publiquement si ✅ Actif. Personnalise tout sans toucher au code ! 🎨`}
+        back={{ href: "/admin", label: "Dashboard admin" }}
+        eyebrow="Administration"
+        title="Partenaires RETRUV"
+        description={`${partnerRows.length} partenaire(s) configuré(s) pour l'onglet Partenaires. Visible publiquement si actif. Gestion complète sans modification de code.`}
       />
 
       {warning ? (
-        <div className={`mb-4 rounded-2xl border px-4 py-3 text-sm flex items-start gap-3 ${isSuccess ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
-          <span className="text-lg">{isSuccess ? "🎉" : "⚠️"}</span>
-          <span className="flex-1 font-medium">{warning}</span>
+        <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${isSuccess ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-900"}`}>
+          {warning}
         </div>
       ) : null}
-
-      <div className="mb-2 flex items-center gap-2 text-xs text-slate-500">
-        <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 border border-sky-200 px-2.5 py-1 font-bold text-sky-700">💡 Moderne & emoji-friendly</span>
-        <span className="hidden sm:inline">— Ton design RETRUV, tes icônes, tes emojis ✨</span>
-      </div>
 
       {isAdmin ? (
         <div className="mb-6 mt-4 space-y-4">
@@ -109,15 +103,13 @@ export default async function AdminPartnersPage() {
             <div className="hidden sm:block h-10 w-px bg-slate-200 mx-1" />
             <AdminPartnerSeedButton />
           </div>
-          <p className="text-xs text-slate-500 flex items-start gap-2">
-            <span className="text-base">💡</span>
-            <span><span className="font-bold">Astuce pro ✨ :</span> L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. <span className="bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-black text-amber-700">0 = premier ⭐</span> + badge 🏆 automatique — ou clique 🌍 pour peupler les 35 pays d'un coup !</span>
+          <p className="text-xs text-slate-500">
+            L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. Valeur 0 = premier affiché.
           </p>
         </div>
       ) : (
-        <div className="mb-6 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-800 flex items-center gap-3">
-          <span className="text-lg">👀</span>
-          <span>Tu es <span className="font-bold">modérateur</span> — tu peux voir la liste, seul un <span className="font-bold">admin</span> peut ajouter/modifier. 🔒</span>
+        <div className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          Accès en lecture seule. Seul un administrateur peut ajouter ou modifier les partenaires.
         </div>
       )}
 
