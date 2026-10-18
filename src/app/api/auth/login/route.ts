@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { users } from "@/db/schema";
 import { createSession, verifyPassword } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
+import { checkIpRate, getClientIpFromRequest } from "@/lib/rate-limit";
 import {
   isLoginLocked,
   logAudit,
@@ -18,6 +19,11 @@ const schema = z.object({
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIpFromRequest(req);
+    const rl = checkIpRate({ ip, scope: "login", limit: 5, windowMs: 60_000 });
+    if (!rl.ok) {
+      return jsonError(`Trop de tentatives depuis cette adresse. Réessayez dans ${rl.retryAfterSec}s.`, 429);
+    }
     const body = await req.json();
     const data = schema.parse(body);
     const phone = data.phone.replace(/\s/g, "");

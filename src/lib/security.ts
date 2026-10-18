@@ -561,16 +561,11 @@ const ENC_PREFIX = "v2"; // AES-256-GCM. Legacy payloads (no prefix) were plain 
 function getEncryptionKey(): Buffer {
   const raw = process.env.RETRUV_ENC_KEY;
   if (!raw) {
-    throw new Error(
-      "RETRUV_ENC_KEY manquant. Générez une clé avec `openssl rand -base64 32` " +
-        "et ajoutez-la aux variables d'environnement (jamais dans la DB)."
-    );
+    throw new Error("ERR_ENC_KEY_MISSING");
   }
   const key = Buffer.from(raw, "base64");
   if (key.length !== 32) {
-    throw new Error(
-      "RETRUV_ENC_KEY invalide : attendu une clé base64 de 32 octets (256 bits)."
-    );
+    throw new Error("ERR_ENC_KEY_INVALID");
   }
   return key;
 }
