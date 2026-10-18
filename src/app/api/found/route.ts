@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { categories, foundItems, recoveryPoints, uploads, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
+import { checkIpRate, getClientIpFromRequest } from "@/lib/rate-limit";
 import { runMatchingForFoundItem } from "@/lib/matching";
 import {
   encryptIdNumber,
@@ -135,6 +136,9 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIpFromRequest(req);
+    const ipRl = checkIpRate({ ip, scope: "declare", limit: 10, windowMs: 60_000 });
+    if (!ipRl.ok) return jsonError(`Trop de déclarations depuis cette adresse. Réessayez dans ${ipRl.retryAfterSec}s.`, 429);
     const user = await requireUser();
     const body = await req.json();
     const data = createSchema.parse(body);

@@ -17,6 +17,7 @@ import {
   verifications,
 } from "@/db/schema";
 import { appendAuditTrail, forwardAuditWebhook } from "./audit-trail";
+// Reuse audit webhook for fraud as well
 import { maskSensitiveText } from "./utils";
 import {
   CONVERSATION_AUTO_CLOSE_DAYS,
@@ -83,6 +84,9 @@ export async function flagFraud(params: {
     severity: params.severity ?? 1,
     details: params.details,
   });
+  if ((params.severity ?? 1) >= 3) {
+    await forwardAuditWebhook({ action: `fraud.${params.flagType}`, userId: params.userId, metadata: { severity: params.severity, details: params.details } } as any).catch(()=>{});
+  }
 
   // Auto-limit on repeated severe flags
   const recent = await db

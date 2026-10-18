@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { foundItems, lostItems, matches, messages, reports, users } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 import { jsonError, jsonOk, handleApiError } from "@/lib/api";
+import { checkIpRate, getClientIpFromRequest } from "@/lib/rate-limit";
 import { checkReportRate, flagFraud, logAudit } from "@/lib/security";
 
 const schema = z.object({
@@ -29,6 +30,9 @@ const TARGET_TABLE = {
 
 export async function POST(req: Request) {
   try {
+    const ip = getClientIpFromRequest(req);
+    const ipRl = checkIpRate({ ip, scope: "report", limit: 5, windowMs: 3600_000 });
+    if (!ipRl.ok) return jsonError(`Trop de signalements depuis cette adresse. Réessayez dans ${Math.ceil((ipRl.retryAfterSec??0)/60)} min.`, 429);
     const user = await requireUser();
     const data = schema.parse(await req.json());
 

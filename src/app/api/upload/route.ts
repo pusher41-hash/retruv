@@ -12,6 +12,11 @@ const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 export async function POST(req: Request) {
   try {
+    const origin = req.headers.get("origin");
+    const host = req.headers.get("host");
+    if (origin && host && !origin.includes(host) && !origin.includes("retruv.vercel.app") && !origin.includes("localhost")) {
+      return jsonError("Origine non autorisée", 403);
+    }
     const user = await requireUser();
 
     const rate = await checkUploadRate(user.id);
