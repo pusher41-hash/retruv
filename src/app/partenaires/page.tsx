@@ -3,6 +3,7 @@ import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { partners } from "@/db/schema";
 import { PageHeader } from "@/components/ui";
+import { COUNTRIES, countryName } from "@/lib/constants";
 import {
   Building2,
   GraduationCap,
@@ -22,6 +23,9 @@ import {
   Heart,
   Zap,
   Globe2,
+  Filter,
+  Flag,
+  Search,
   type LucideIcon,
 } from "lucide-react";
 
@@ -78,8 +82,30 @@ async function getPartners() {
   }
 }
 
-export default async function PartnersPage() {
-  const dbPartners = await getPartners();
+type SearchParams = { country?: string; type?: string };
+
+export default async function PartnersPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
+  const params = await searchParams;
+  const selectedCountry = params?.country?.toUpperCase() ?? "";
+  const dbPartnersAll = await getPartners();
+
+  // Filter by country if selected
+  const dbPartners = selectedCountry && dbPartnersAll
+    ? dbPartnersAll.filter((p) => p.country === selectedCountry)
+    : dbPartnersAll;
+
+  // Count per country for filter pills
+  const countryCounts = new Map<string, number>();
+  if (dbPartnersAll) {
+    for (const p of dbPartnersAll) {
+      const c = p.country ?? "IT";
+      countryCounts.set(c, (countryCounts.get(c) ?? 0) + 1);
+    }
+  }
+  const activeCountries = Array.from(countryCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12); // top 12 for pill row
+
 
   return (
     <div className="container-app py-8">
@@ -93,6 +119,56 @@ export default async function PartnersPage() {
       <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-200 px-4 py-2 text-xs font-bold text-sky-700">
         <Sparkles className="h-4 w-4" /> ✨ Réseau mondial • Moderne • Emoji-friendly <Globe2 className="h-4 w-4" />
       </div>
+
+      {/* 🌍 Filtres pays — moderne RETRUV */}
+      {dbPartnersAll && dbPartnersAll.length > 8 ? (
+        <div className="card p-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-black text-retruv-navy">
+              <Filter className="h-4 w-4 text-sky-600" /> 🌍 Filtrer par pays
+              <span className="rounded-full bg-sky-50 border border-sky-200 px-2 py-0.5 text-xs font-bold text-sky-700">{dbPartners?.length ?? 0} / {dbPartnersAll.length} affichés</span>
+            </div>
+            <form method="GET" className="flex gap-2">
+              <div className="relative">
+                <Flag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <select name="country" defaultValue={selectedCountry} className="select pl-10 pr-8 py-2 text-sm">
+                  <option value="">🌍 Tous les pays ({dbPartnersAll.length})</option>
+                  {COUNTRIES.filter(c => countryCounts.has(c.code)).map(c => (
+                    <option key={c.code} value={c.code}> {c.name} — {countryCounts.get(c.code)} partenaire(s)</option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" className="btn btn-primary py-2 px-4 text-sm gap-1"><Search className="h-4 w-4" /> Filtrer</button>
+              <Link href="/partenaires" className="btn btn-secondary py-2 px-3 text-sm">🔄 Tous</Link>
+            </form>
+          </div>
+          {/* Pill row */}
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link href="/partenaires" className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${!selectedCountry ? "bg-retruv-blue text-white border-retruv-blue" : "bg-white text-slate-600 border-slate-200 hover:border-sky-300"}`}>
+              🌍 Tous <span className="bg-white/20 px-1.5 py-0.5 rounded-full text-xs">{dbPartnersAll.length}</span>
+            </Link>
+            {activeCountries.map(([code, count]) => {
+              const c = COUNTRIES.find(x => x.code === code);
+              const isActive = selectedCountry === code;
+              return (
+                <Link key={code} href={`/partenaires?country=${code}`} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${isActive ? "bg-retruv-blue text-white border-retruv-blue shadow-md" : "bg-white text-slate-600 border-slate-200 hover:border-sky-300 hover:text-sky-700"}`}>
+                  🌍 {c?.name ?? code} <span className={`${isActive ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"} px-1.5 py-0.5 rounded-full`}>{count}</span>
+                </Link>
+              );
+            })}
+            {selectedCountry && !countryCounts.has(selectedCountry) ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-3 py-1.5 text-xs font-bold text-amber-700">⚠️ Aucun partenaire pour {countryName(selectedCountry)} — essaie un autre pays</span>
+            ) : null}
+          </div>
+          {selectedCountry ? (
+            <div className="mt-3 rounded-xl bg-gradient-to-r from-sky-50 to-blue-50 border border-sky-100 px-3 py-2 flex items-center gap-2 text-sm">
+              <Search className="h-4 w-4 text-sky-600" />
+              <span className="font-semibold text-sky-800">📍 Affichage : <span className="font-black">{countryName(selectedCountry)}</span> — {dbPartners?.length ?? 0} partenaire(s) officiel(s) 🌍✨</span>
+              <Link href="/partenaires" className="ml-auto text-xs font-bold text-sky-600 hover:underline">✕ Effacer filtre</Link>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {dbPartners ? (
         <div className="grid gap-5 md:grid-cols-3">

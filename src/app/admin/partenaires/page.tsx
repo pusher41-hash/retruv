@@ -5,6 +5,7 @@ import { partners } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { AdminAddPartnerForm } from "@/components/admin-partner-form";
+import { AdminPartnerSeedButton } from "@/components/admin-partner-seed-button";
 import { PartnerTable } from "./partner-table";
 
 export const dynamic = "force-dynamic";
@@ -102,11 +103,15 @@ export default async function AdminPartnersPage() {
       </div>
 
       {isAdmin ? (
-        <div className="mb-6 mt-4">
-          <AdminAddPartnerForm />
-          <p className="mt-3 text-xs text-slate-500 flex items-start gap-2">
+        <div className="mb-6 mt-4 space-y-4">
+          <div className="flex flex-col sm:flex-row gap-3 items-start">
+            <AdminAddPartnerForm />
+            <div className="hidden sm:block h-10 w-px bg-slate-200 mx-1" />
+            <AdminPartnerSeedButton />
+          </div>
+          <p className="text-xs text-slate-500 flex items-start gap-2">
             <span className="text-base">💡</span>
-            <span><span className="font-bold">Astuce pro ✨ :</span> L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. <span className="bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-black text-amber-700">0 = premier ⭐</span> + badge 🏆 automatique</span>
+            <span><span className="font-bold">Astuce pro ✨ :</span> L'ordre d'affichage contrôle l'ordre des cartes sur la page publique. <span className="bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-black text-amber-700">0 = premier ⭐</span> + badge 🏆 automatique — ou clique 🌍 pour peupler les 35 pays d'un coup !</span>
           </p>
         </div>
       ) : (
