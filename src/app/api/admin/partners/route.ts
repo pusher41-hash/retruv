@@ -85,8 +85,11 @@ export async function GET() {
         .orderBy(asc(partners.sortOrder), desc(partners.createdAt));
       return jsonOk({ partners: rows });
     } catch (e: unknown) {
-      const msg = (e as Error)?.message ?? "";
-      if (msg.includes("does not exist") || msg.includes("relation")) {
+      const err = e as { message?: string; code?: string; cause?: { code?: string } };
+      const msg = err?.message ?? "";
+      const code = err?.code ?? err?.cause?.code;
+      const isMissing = code === "42P01" || msg.includes("does not exist") || msg.includes("relation") || msg.includes("Failed query") || msg.includes("partners");
+      if (isMissing) {
         try {
           await ensurePartnersTable();
           const rows = await db.select().from(partners).orderBy(asc(partners.sortOrder), desc(partners.createdAt));
@@ -132,8 +135,11 @@ export async function POST(req: Request) {
 
       return jsonOk({ partner: row }, 201);
     } catch (e: unknown) {
-      const msg = (e as Error)?.message ?? "";
-      if (msg.includes("does not exist") || msg.includes("relation")) {
+      const err = e as { message?: string; code?: string; cause?: { code?: string } };
+      const msg = err?.message ?? "";
+      const code = err?.code ?? err?.cause?.code;
+      const isMissing = code === "42P01" || msg.includes("does not exist") || msg.includes("relation") || msg.includes("Failed query") || msg.includes("partners");
+      if (isMissing) {
         await ensurePartnersTable();
         const [row] = await db
           .insert(partners)

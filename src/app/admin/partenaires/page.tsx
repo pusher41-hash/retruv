@@ -1,14 +1,45 @@
 import { redirect } from "next/navigation";
-import { asc } from "drizzle-orm";
+import { asc, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { partners } from "@/db/schema";
 import { getSessionUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { AdminAddPartnerForm } from "@/components/admin-partner-form";
 import { PartnerTable } from "./partner-table";
-import { countryName } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
+
+async function ensurePartnersTable() {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS "partners" (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "title" text NOT NULL,
+      "description" text NOT NULL,
+      "icon" text NOT NULL DEFAULT 'Building2',
+      "website" text,
+      "logo_url" text,
+      "city" text,
+      "country" text DEFAULT 'IT',
+      "is_active" boolean NOT NULL DEFAULT true,
+      "sort_order" integer NOT NULL DEFAULT 0,
+      "created_at" timestamp NOT NULL DEFAULT now(),
+      "updated_at" timestamp NOT NULL DEFAULT now()
+    )
+  `);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "partners_active_idx" ON "partners" ("is_active")`);
+  await db.execute(sql`CREATE INDEX IF NOT EXISTS "partners_sort_idx" ON "partners" ("sort_order")`);
+  const existing: unknown = await db.execute(sql`SELECT count(*)::int as c FROM "partners"`);
+  const rows = (existing as { rows?: { c?: number }[] })?.rows;
+  const count = rows?.[0]?.c ?? 0;
+  if (count === 0) {
+    await db.execute(sql`
+      INSERT INTO "partners" ("title", "description", "icon", "sort_order") VALUES
+        ('Gares & Transport', 'Gares, aéroports, réseaux de bus, partout dans le monde. Dépôt d''objets, récupération, visibilité. Le point devient un service public utile.', 'Train', 0),
+        ('Universités & Campus', 'Établissements d''enseignement, quel que soit le pays. Déclarations de documents étudiants, récupération au secrétariat, confiance institutionnelle.', 'GraduationCap', 1),
+        ('Entreprises & Commerces', 'Hôtels, centres commerciaux, entreprises. Intégration du moteur de matching via API. Réputation et service client.', 'Building2', 2)
+    `);
+  }
+}
 
 export default async function AdminPartnersPage() {
   const user = await getSessionUser();
@@ -21,12 +52,22 @@ export default async function AdminPartnersPage() {
   try {
     partnerRows = await db.select().from(partners).orderBy(asc(partners.sortOrder), asc(partners.createdAt));
   } catch (e: unknown) {
-    const msg = (e as Error)?.message ?? "";
-    if (msg.includes("does not exist") || msg.includes("relation")) {
-      warning = "Table partners manquante — exécutez sql/002-partners.sql sur votre base Neon. Affichage temporairement vide.";
+    const err = e as { message?: string; code?: string; cause?: { code?: string } };
+    const msg = err?.message ?? "";
+    const code = err?.code ?? err?.cause?.code;
+    const isMissingTable = code === "42P01" || msg.includes("does not exist") || msg.includes("relation") || msg.includes("Failed query") || msg.includes("partners");
+    if (isMissingTable) {
+      try {
+        await ensurePartnersTable();
+        partnerRows = await db.select().from(partners).orderBy(asc(partners.sortOrder), asc(partners.createdAt));
+        warning = "✅ Table partenaires créée automatiquement avec les 3 partenaires de base.";
+      } catch (retryErr) {
+        console.error("Admin partners auto-create failed:", retryErr);
+        warning = `Impossible de créer la table: ${(retryErr as Error).message}`;
+      }
     } else {
       console.error("Admin partners load error:", e);
-      warning = `Erreur de chargement: ${(e as Error).message}`;
+      warning = `Erreur de chargement: ${msg}`;
       partnerRows = [];
     }
   }
