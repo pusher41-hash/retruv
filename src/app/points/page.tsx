@@ -200,6 +200,7 @@ export default async function PointsPage({ searchParams }: { searchParams?: Prom
                   <CheckCircle2 className="h-3 w-3" /> Opérationnel
                 </span>
               </div>
+              <Link href={`/points/${p.id}`} className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-slate-700 hover:text-slate-900">Voir QR →</Link>
             </div>
           ))}
         </div>
